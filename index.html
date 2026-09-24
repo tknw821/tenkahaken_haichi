@@ -83,12 +83,15 @@ details.card>summary{cursor:pointer;font-weight:600}
 .dlg h3{margin:0 0 8px}
 .dbtn{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
 .dlg .f{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin:6px 0}
-#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:8px;z-index:200;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:8px;z-index:200;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none;display:flex;align-items:center;gap:10px}
 #toast.on{opacity:.95}
+#toast.has-btn{pointer-events:auto}
+#toast button{background:#fff;color:#222;border:none;padding:4px 10px;border-radius:6px;font-size:12px;flex-shrink:0}
 .ghost{position:fixed;z-index:150;pointer-events:none;transform:translate(-50%,-140%);opacity:.9}
 .ghost .chip{height:34px;min-width:44px;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .bubble{position:fixed;z-index:120;background:#222;color:#fff;padding:6px 10px;border-radius:8px;transform:translate(-50%,-120%);pointer-events:none;font-size:13px;max-width:70vw}
 .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#outSideSeg{display:none;margin-bottom:8px}
 .note{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:6px 10px;margin:8px 0;font-weight:600}
 .legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px}
 .legend .g{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff}
@@ -121,6 +124,10 @@ details.card>summary{cursor:pointer;font-weight:600}
 .previewchip.sel{border-color:#ff6d00;opacity:1}
 .hsv{margin-top:6px}
 .hsv summary{cursor:pointer;font-size:12px;color:var(--pri)}
+.edrow .cw.colorline{flex-wrap:wrap;align-items:center}
+.colordetail{margin-top:4px}
+.colordetail summary{cursor:pointer;font-size:12px;color:var(--pri)}
+.colordetail>.cw{margin-top:6px}
 .hsvbox{margin-top:6px}
 .hsvrow{display:flex;align-items:center;gap:8px;margin:5px 0}
 .hsvrow .hsvlab{width:32px;font-size:12px;color:var(--sub)}
@@ -187,6 +194,14 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
  body.viewing #sharePanel{order:2}
  #listPane.collapsed #listBody{display:none}
  #listPane.collapsed #listPreview{display:flex;flex-wrap:wrap;gap:5px;padding:2px 0 4px}
+ /* スマホでタップしやすくする（C-1） */
+ .mrow{padding:6px 6px}
+ .mrow .grip,.mrow [data-act="edit"]{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;padding:0}
+ .swatch{width:30px;height:30px}
+ /* 閲覧画面を左右切替にする（C-3） */
+ #outSideSeg{display:inline-flex}
+ #outView[data-side="R"] .pair>div:first-child{display:none}
+ #outView[data-side="L"] .pair>div:last-child{display:none}
 }
 @media(max-width:600px){
  header#top{gap:5px;padding:6px 8px;flex-wrap:nowrap}
@@ -319,6 +334,7 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
  <div class="card" id="outMain">
   <div class="outhead">
    <div class="title" id="oTitle"></div>
+   <button id="saveImgBtn" title="現在表示中の陣地のマップをPNG画像で保存します">画像で保存</button>
    <button id="viewCfgBtn2" class="tg" aria-expanded="false">表示設定 ▾</button>
   </div>
   <div class="memo" id="oMemo"></div>
@@ -328,6 +344,7 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
    <span class="rangewrap">文字サイズ<input type="range" id="fsRange2" min="0.8" max="1.8" step="0.1"></span>
   </div>
   <div class="note">中央方向が先頭（前線）です</div>
+  <div class="seg" id="outSideSeg"><button data-oside="L">左陣地</button><button data-oside="R">右陣地</button></div>
   <div class="pair">
    <div><div class="side-h">左陣地の場合</div><div class="mapwrap" id="mapL"></div></div>
    <div><div class="side-h">右陣地の場合</div><div class="mapwrap" id="mapR"></div></div>
@@ -355,7 +372,7 @@ const GRAY='#9aa0a6';
 const defaultState=()=>({v:1,title:'',memo:'',map:{rows:10,cols:10,parity:0,disabled:[]},members:[],teamColors:{},placements:{}});
 let S=defaultState();
 let mode='edit', viewing=false, editSide='L', sel=null, editingId=null;
-let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:true,cfgOpen:false};
+let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:true,cfgOpen:false,outSide:'L'};
 let undoStack=[], redoStack=[], idSeq=0;
 let bulkMode=false, bulkSel=new Set();
 
@@ -526,14 +543,21 @@ function redo(){ if(viewing||!redoStack.length) return; undoStack.push(JSON.stri
 function place(mid,key){
  if(!isCellIn(S,key)||!memberById(mid)) return;
  const occ=S.placements[key]; if(occ===mid) return;
+ const prev=placementOf(mid);
+ const mName=memberById(mid).name, occName=occ&&memberById(occ)?memberById(occ).name:null;
  mutate(()=>{
-  const prev=placementOf(mid);
   if(prev) delete S.placements[prev];
   if(occ&&prev) S.placements[prev]=occ;
   S.placements[key]=mid;
  });
+ toast((occ&&prev&&occName)?`${mName} と ${occName} を入れ替えました`:`${mName} を配置しました`,{undo:true});
 }
-function unplace(mid){ const k=placementOf(mid); if(!k) return; mutate(()=>{delete S.placements[k];}); }
+function unplace(mid){
+ const k=placementOf(mid); if(!k) return;
+ const m=memberById(mid);
+ mutate(()=>{delete S.placements[k];});
+ if(m) toast(`${m.name} を配置から外しました`,{undo:true});
+}
 
 /* ============ ダイアログ・トースト ============ */
 function dialog({title,body,buttons}){
@@ -557,7 +581,19 @@ function dialog({title,body,buttons}){
 }
 const confirmDlg=(title,msg,ok='OK',danger=false)=>dialog({title,body:'<div>'+msg+'</div>',buttons:[{t:'キャンセル',v:false},{t:ok,v:true,cls:danger?'pri dan':'pri'}]});
 let toastT;
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3000);}
+function toast(m,opts){
+ const t=$('#toast'); clearTimeout(toastT);
+ if(opts&&opts.undo){
+  t.innerHTML=`<span>${esc(m)}</span><button type="button" id="toastUndoBtn">戻す</button>`;
+  t.classList.add('has-btn');
+  $('#toastUndoBtn').onclick=()=>{ undo(); t.classList.remove('on'); };
+ }else{
+  t.textContent=m;
+  t.classList.remove('has-btn');
+ }
+ t.classList.add('on');
+ toastT=setTimeout(()=>t.classList.remove('on'),3000);
+}
 
 /* ============ SVG描画 ============ */
 function tw(s){let w=0;for(const ch of s){const c=ch.codePointAt(0);w+=((c>=0x20&&c<=0x7e)||(c>=0xff61&&c<=0xff9f))?0.58:1;}return w;}
@@ -706,9 +742,11 @@ function renderList(){
    h+=`<div class="edrow" data-eid="${m.id}"><div class="full hint">メンバー名以外の項目は空欄のままで構いません。</div><label>メンバー名</label><input type="text" data-f="name" value="${esc(m.name)}">`+
     `<label>チーム</label><input type="text" data-f="team" value="${esc(m.team)}" placeholder="（任意）">`+
     `<label>表示名</label><input type="text" data-f="short" value="${esc(m.short)}" placeholder="${esc(defShort(m.name))}（自動）">`+
-    `<label>カラー</label><div class="cw"><input type="text" data-f="color" value="${esc(m.color)}" placeholder="空欄＝チーム色" style="flex:1"><input type="color" data-f="colorpick" value="${col}"></div>`+
-    `<div class="full">${swatchBar(col,'m:'+m.id)}</div>`+
-    `<div class="full">${hsvBox(col)}</div>`+
+    `<label>カラー</label><div class="cw colorline">${swatchBar(col,'m:'+m.id)}${m.color?'<button type="button" data-act="colorreset">チーム色に戻す</button>':''}</div>`+
+    `<div class="full"><details class="colordetail"><summary>詳しく指定</summary>`+
+     `<div class="cw"><input type="text" data-f="color" value="${esc(m.color)}" placeholder="空欄＝チーム色" style="flex:1"><input type="color" data-f="colorpick" value="${col}"></div>`+
+     hsvBox(col)+
+    `</details></div>`+
     `<div class="full">${p?'<button data-act="unplace">配置解除</button>':''}<button data-act="del" class="dan">このメンバーを削除</button><button data-act="close">閉じる</button></div></div>`;
   }
   return h;
@@ -730,6 +768,8 @@ function renderOut(){
  setRange($('#fsRange2'),ui.fontScale);
  $('#oTitle').textContent=S.title||'（タイトル未設定）'; $('#oMemo').textContent=S.memo;
  renderCfg();
+ document.querySelectorAll('#outSideSeg button').forEach(b=>b.classList.toggle('on',b.dataset.oside===ui.outSide));
+ $('#outView').dataset.side=ui.outSide;
  $('#mapL').innerHTML=mapSVG(false,{static:true}); $('#mapR').innerHTML=mapSVG(true,{static:true});
  const to=teamOrder(); const groups=[];
  to.concat(['']).forEach(t=>{
@@ -740,6 +780,7 @@ function renderOut(){
   ms.map(m=>{const c=memberColor(m);return `<div class="it"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>→ ${esc(m.name)}</div>`;}).join('')+'</div>').join('');
  const un=S.members.filter(m=>!placementOf(m.id));
  $('#unplacedBox').innerHTML=un.length?`<div class="note" style="font-weight:400">未配置（${un.length}名）：${un.map(m=>esc(m.name)+(m.team?'（'+esc(m.team)+'）':'')).join('、')}</div>`:'';
+ checkShareFresh();
 }
 
 function renderCfg(){
@@ -748,6 +789,44 @@ function renderCfg(){
   $(b).setAttribute('aria-expanded',ui.cfgOpen?'true':'false');
   $(b).textContent=ui.cfgOpen?'表示設定 ▴':'表示設定 ▾';
  });
+}
+
+/* ============ 出力画面：画像で保存（C-4） ============ */
+function currentOutSide(){
+ // スマホ幅（左右切替あり）では今選んでいる側、PC幅では常に左陣地
+ return window.matchMedia('(max-width:900px)').matches?ui.outSide:'L';
+}
+function svgWithSize(svgStr){
+ const m=/viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(svgStr);
+ if(!m) return svgStr;
+ const vw=m[3], vh=m[4];
+ return svgStr.replace('<svg ',`<svg width="${vw}" height="${vh}" `);
+}
+function saveOutImage(){
+ const side=currentOutSide(), mirror=side==='R';
+ const svgStr=svgWithSize(mapSVG(mirror,{static:true}));
+ const svgBlob=new Blob([svgStr],{type:'image/svg+xml;charset=utf-8'});
+ const url=URL.createObjectURL(svgBlob);
+ const img=new Image();
+ img.onload=()=>{
+  URL.revokeObjectURL(url);
+  const scale=2, title=(S.title||'').trim(), titleH=title?72:0;
+  const w=img.naturalWidth*scale, h=img.naturalHeight*scale+titleH;
+  const c=document.createElement('canvas'); c.width=w; c.height=h;
+  const cx=c.getContext('2d');
+  cx.fillStyle='#fff'; cx.fillRect(0,0,w,h);
+  if(title){
+   cx.fillStyle='#222'; cx.font='bold 34px sans-serif'; cx.textAlign='center'; cx.textBaseline='middle';
+   cx.fillText(title,w/2,titleH/2);
+  }
+  cx.drawImage(img,0,titleH,img.naturalWidth*scale,img.naturalHeight*scale);
+  const safe=title.replace(/[\\/:*?"<>|]/g,'_');
+  const sideLabel=mirror?'右陣地':'左陣地';
+  const filename=safe?`配置図_${safe}_${sideLabel}.png`:`配置図_${sideLabel}.png`;
+  savePng(c,filename);
+ };
+ img.onerror=()=>{ URL.revokeObjectURL(url); toast('画像を作成できませんでした'); };
+ img.src=url;
 }
 
 /* ============ 共有URL ============ */
@@ -771,16 +850,62 @@ function decodeState(str){
  const st=sanitize({title:a[1],memo:a[2],map:{rows:a[3][0],cols:a[3][1],parity:a[3][2],disabled:a[3][3]},members,teamColors:tc,placements:pl});
  return st;
 }
+function shareUrlFor(enc){ return location.origin.replace('null','file://')+location.pathname+'#d='+enc; }
+async function copyText(text){
+ try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+ try{
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  const ok=document.execCommand('copy'); ta.remove(); return ok;
+ }catch(e){ return false; }
+}
+let shareEnc=null; // 共有ボックス作成時点の encodeState()。null は未作成。viewing 中は 'VIEW'。
 async function makeShare(){
- const enc=encodeState();
- const url=location.origin.replace('null','file://')+location.pathname+'#d='+enc;
- const box=$('#shareBox'); box.hidden=false;
- box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div><textarea class="urlbox" rows="3" readonly></textarea><div id="qrHost" style="text-align:center"></div>`;
- const ta=box.querySelector('textarea'); ta.value=url;
- let ok=false; try{await navigator.clipboard.writeText(url);ok=true;}catch(e){}
- if(!ok){ ta.focus(); ta.select(); try{ok=document.execCommand('copy');}catch(e){} }
+ shareEnc=encodeState();
+ const url=shareUrlFor(shareEnc);
+ showShareBox(url);
+ const ok=await copyText(url);
  toast(ok?'共有URLをコピーしました':'コピーできませんでした。URLを選択して手動でコピーしてください');
+}
+function showShareBox(url){
+ const box=$('#shareBox'); box.hidden=false;
+ $('#shareBtn').textContent='共有URL・QRコードを作成'; $('#shareBtn').classList.remove('pri');
+ const canShare=!!navigator.share;
+ box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div>`+
+  `<textarea class="urlbox" rows="3" readonly></textarea>`+
+  `<div class="toolbar"><button id="copyUrlBtn" class="pri">URLをコピー</button>${canShare?'<button id="shareUrlBtn">共有…</button>':''}</div>`+
+  `<div id="qrHost" style="text-align:center"></div>`;
+ const ta=box.querySelector('textarea'); ta.value=url;
+ const copyBtn=$('#copyUrlBtn'), origLabel=copyBtn.textContent;
+ copyBtn.onclick=async()=>{
+  const ok=await copyText(url);
+  if(ok){
+   copyBtn.textContent='コピーしました ✓';
+   setTimeout(()=>{ if(copyBtn.isConnected) copyBtn.textContent=origLabel; },1500);
+  }else{
+   ta.focus(); ta.select();
+   toast('コピーできませんでした。URLを選択して手動でコピーしてください');
+  }
+ };
+ if(canShare){
+  $('#shareUrlBtn').onclick=async()=>{
+   try{ await navigator.share({title:S.title||'三方配置図',url}); }
+   catch(e){ if(e&&e.name==='AbortError') return; }
+  };
+ }
  renderQR(url);
+}
+function checkShareFresh(){
+ const box=$('#shareBox');
+ if(viewing){
+  if(box.hidden){ shareEnc='VIEW'; showShareBox(location.href); }
+  return;
+ }
+ if(shareEnc===null||box.hidden) return;
+ if(encodeState()!==shareEnc){
+  box.hidden=true;
+  $('#shareBtn').textContent='内容が変わりました：共有URLを作り直す'; $('#shareBtn').classList.add('pri');
+ }
 }
 function renderQR(url){
  const host=$('#qrHost'); if(!host) return;
@@ -790,7 +915,48 @@ function renderQR(url){
   new QRCode(host,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});
   const cap=document.createElement('div'); cap.className='qrhint'; cap.textContent='スマホのカメラなどで読み取れます';
   host.appendChild(cap);
+  const saveBtn=document.createElement('button'); saveBtn.style.marginTop='8px'; saveBtn.textContent='QRコードを画像で保存';
+  saveBtn.onclick=()=>saveQrPng(host);
+  host.appendChild(saveBtn);
  }catch(e){ host.innerHTML='<div class="qrhint">QRコードを生成できませんでした。URLのコピーをご利用ください。</div>'; }
+}
+function dataUrlToBlob(dataUrl){
+ const m=/^data:(.*?);base64,(.*)$/.exec(dataUrl); if(!m) return null;
+ const bin=atob(m[2]), len=bin.length, arr=new Uint8Array(len);
+ for(let i=0;i<len;i++) arr[i]=bin.charCodeAt(i);
+ return new Blob([arr],{type:m[1]});
+}
+function saveQrPng(host){
+ const src=host.querySelector('canvas'); if(!src) return;
+ const pad=16;
+ const c=document.createElement('canvas'); c.width=src.width+pad*2; c.height=src.height+pad*2;
+ const cx=c.getContext('2d');
+ cx.fillStyle='#fff'; cx.fillRect(0,0,c.width,c.height);
+ cx.drawImage(src,pad,pad);
+ const safe=(S.title||'').trim().replace(/[\\/:*?"<>|]/g,'_');
+ const filename=safe?`配置図QR_${safe}.png`:'配置図QR.png';
+ savePng(c,filename);
+}
+function downloadBlob(blob,filename){
+ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename;
+ document.body.appendChild(a); a.click(); a.remove();
+ setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function saveOrShareBlob(blob,filename){
+ const file=new File([blob],filename,{type:blob.type||'image/png'});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){
+  // await を挟まず、クリック直後に同期的に呼ぶ。拒否／失敗時は <a download> にフォールバック
+  navigator.share({files:[file]}).catch(e=>{ if(e&&e.name==='AbortError') return; downloadBlob(blob,filename); });
+  return;
+ }
+ downloadBlob(blob,filename);
+}
+// canvas（生成済み・同期的に描画完了しているもの）を PNG として保存／共有する共通関数。
+// Safari は navigator.share をユーザー操作の直後に同期的に呼ばないと拒否することがあるため、
+// toBlob（非同期）ではなく toDataURL（同期）から Blob を作る
+function savePng(canvas,filename){
+ const blob=dataUrlToBlob(canvas.toDataURL('image/png'));
+ if(blob) saveOrShareBlob(blob,filename);
 }
 
 /* ============ CSV ============ */
@@ -859,11 +1025,16 @@ async function importText(text){
  });
  toast(`${entries.length}名を読み込みました`+(dups?`（重複${dups}件を統合）`:''));
 }
+function csvFilename(){
+ const d=new Date(), ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+ const safe=(S.title||'').trim().replace(/[\\/:*?"<>|]/g,'_');
+ return safe?`三方配置図_${safe}_${ymd}.csv`:`三方配置図_${ymd}.csv`;
+}
 function exportCSV(){
  const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
  const lines=['メンバー名,チーム,表示名,カラー,配置'].concat(S.members.map(m=>[q(m.name),q(m.team),q(m.short),q(m.color),q(placementOf(m.id)||'')].join(',')));
  const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
- const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='三方配置図_メンバー表.csv'; document.body.appendChild(a); a.click();
+ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=csvFilename(); document.body.appendChild(a); a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
 }
 async function readFile(f){
@@ -1013,6 +1184,8 @@ document.addEventListener('click',e=>{
 /* ============ 各種UIイベント ============ */
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{ if(mode!==b.dataset.mode){mode=b.dataset.mode;renderAll();window.scrollTo(0,0);} });
 document.querySelectorAll('#sideSeg button').forEach(b=>b.onclick=()=>{editSide=b.dataset.side;renderAll();});
+document.querySelectorAll('#outSideSeg button').forEach(b=>b.onclick=()=>{ui.outSide=b.dataset.oside;saveUI();renderAll();});
+$('#saveImgBtn').onclick=saveOutImage;
 document.querySelectorAll('#labSeg button,#labSeg2 button').forEach(b=>b.onclick=()=>{ui.label=b.dataset.lab;saveUI();renderAll();});
 $('#colChk').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
 $('#colChk2').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
@@ -1142,6 +1315,7 @@ $('#rows').addEventListener('click',e=>{
  if(act==='edit'){editingId=editingId===id?null:id;renderList();}
  else if(act==='close'){editingId=null;renderList();}
  else if(act==='unplace') unplace(id);
+ else if(act==='colorreset'){ const m=memberById(id); if(m) mutate(()=>{m.color='';}); }
  else if(act==='del') confirmDlg('メンバー削除','このメンバーを削除します（配置も解除されます）。','削除する',true).then(ok=>{ if(ok) mutate(()=>{S.members=S.members.filter(m=>m.id!==id);}); });
 });
 $('#rows').addEventListener('input',e=>{
@@ -1189,8 +1363,15 @@ $('#teamBox').addEventListener('click',e=>{
 });
 $('#shareBtn').onclick=makeShare;
 $('#importBtn').onclick=async()=>{
- if(!await confirmDlg('編集に取り込む','この共有データで、あなたの編集データを置き換えます。','取り込む',true)) return;
+ let existing=null;
+ try{ const t=localStorage.getItem(LS_KEY); if(t) existing=sanitize(JSON.parse(t)); }catch(e){}
+ const n=existing?existing.members.length:0;
+ const msg=n>0
+  ?`あなたの編集データ（メンバー${n}名・配置${Object.keys(existing.placements).length}名）は、この共有データで上書きされます。必要なら先に編集画面の［ファイル］→［CSVで書き出し］で保存してください。`
+  :'この共有データで、あなたの編集データを置き換えます。';
+ if(!await confirmDlg('編集に取り込む',msg,'取り込む',true)) return;
  const keep=S; viewing=false; S=keep; undoStack=[];redoStack=[]; saveLS(); sel=null; mode='edit';
+ shareEnc=null; $('#shareBox').hidden=true; $('#shareBtn').textContent='共有URL・QRコードを作成'; $('#shareBtn').classList.add('pri');
  history.replaceState(null,'',location.pathname+location.search); renderAll();
 };
 window.addEventListener('hashchange',()=>location.reload());
