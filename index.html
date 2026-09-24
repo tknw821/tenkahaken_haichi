@@ -52,7 +52,7 @@ svg.map .cell.sel polygon{stroke:#ff6d00;stroke-width:5;animation:blink 1s infin
 svg.map .cell.drop polygon{stroke:#1976d2;stroke-width:5}
 svg.map .cell.hl polygon{stroke:#ff6d00;stroke-width:4}
 @keyframes blink{50%{stroke-opacity:.35}}
-.lab{fill:#555;font-size:13px;text-anchor:middle}
+.lab{fill:#444;font-size:16px;font-weight:700;text-anchor:middle}
 .fr{fill:#c62828;text-anchor:middle;font-weight:700}
 .bs{fill:#6b7280;text-anchor:middle;font-weight:600}
 #infoBar{margin-top:8px;padding:8px 10px;border-radius:8px;background:#f0f4ff;border:1px solid #cfdcff;min-height:38px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -95,6 +95,23 @@ details.card>summary{cursor:pointer;font-weight:600}
 .memo{white-space:pre-wrap;margin:6px 0}
 .title{font-size:20px;font-weight:700;margin:4px 0}
 .urlbox{width:100%;font-size:12px}
+.swatchbar{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.swatch{width:24px;height:24px;padding:0;border-radius:6px;border:2px solid transparent}
+.swatch.on{border-color:#333;box-shadow:0 0 0 2px #fff inset}
+.menuwrap{position:relative;display:inline-block}
+.menu{position:absolute;top:calc(100% + 4px);left:0;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.18);z-index:60;display:flex;flex-direction:column;padding:4px;min-width:160px}
+.menu button{text-align:left;border:none;border-radius:6px;padding:7px 10px}
+.menu button:hover{background:#f0f2f5}
+.bulkbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fff4e8;border:1px solid #ffcc80;border-radius:8px;padding:6px 8px;margin:6px 0}
+.teamrow .swatchbar{flex-basis:100%;margin:2px 0 4px}
+.mrow .bsel{margin-right:2px}
+.rangewrap{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.rangewrap input[type=range]{width:100px}
+#listHead{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+#listHead .side-h{margin:0;text-align:left;flex:1}
+.listToggleBtn{display:none}
+#listPreview{display:none}
+.hint{color:var(--sub);font-size:12px}
 @media(max-width:900px){
  .layout{grid-template-columns:1fr}
  #mapPane{grid-column:1;grid-row:1}
@@ -104,6 +121,9 @@ details.card>summary{cursor:pointer;font-weight:600}
  #rows{max-height:none}
  .pair{grid-template-columns:1fr}
  main{padding:8px}
+ .listToggleBtn{display:inline-flex}
+ #listPane.collapsed #listBody{display:none}
+ #listPane.collapsed #listPreview{display:flex;flex-wrap:wrap;gap:5px;padding:2px 0 4px}
 }
 </style>
 </head>
@@ -128,6 +148,7 @@ details.card>summary{cursor:pointer;font-weight:600}
     <div class="seg" id="sideSeg"><button data-side="L">左陣地で編集</button><button data-side="R">右陣地で編集</button></div>
     <div class="seg" id="labSeg"><button data-lab="short">表示名</button><button data-lab="team">チーム</button><button data-lab="both">表示名＋チーム</button></div>
     <label class="chk"><input type="checkbox" id="colChk">列番号</label>
+    <span class="rangewrap">文字サイズ<input type="range" id="fsRange" min="0.8" max="1.8" step="0.1"></span>
    </div>
    <div class="toolbar">
     <button id="mapCfgBtn">マップ設定</button>
@@ -144,12 +165,23 @@ details.card>summary{cursor:pointer;font-weight:600}
   </section>
 
   <aside id="listPane" class="card">
+   <div id="listHead">
+    <div class="side-h">メンバー表</div>
+    <button id="listToggle" class="listToggleBtn">▲ たたむ</button>
+   </div>
+   <div id="listPreview"></div>
+   <div id="listBody">
    <div class="toolbar">
-    <button id="fileBtn">CSV読込</button>
+    <div class="menuwrap">
+     <button id="dataMenuBtn">読込・書き出し ▾</button>
+     <div id="dataMenu" class="menu" hidden>
+      <button type="button" data-act="file">CSV読込</button>
+      <button type="button" data-act="paste">貼り付け読込</button>
+      <button type="button" data-act="export">CSV書き出し</button>
+     </div>
+    </div>
     <input type="file" id="fileIn" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
-    <button id="pasteBtn">貼り付け読込</button>
     <button id="addBtn">＋1名追加</button>
-    <button id="csvOutBtn">CSV書き出し</button>
    </div>
    <div class="stat" id="stat"></div>
    <div class="toolbar">
@@ -157,8 +189,19 @@ details.card>summary{cursor:pointer;font-weight:600}
     <select id="sortSel"><option value="input">入力順</option><option value="team">チーム順</option><option value="name">名前順</option></select>
     <input type="text" id="qIn" placeholder="名前・チーム検索" style="flex:1;min-width:110px">
    </div>
+   <div class="toolbar">
+    <button id="bulkModeBtn">一括選択</button>
+   </div>
+   <div class="bulkbar" id="bulkBar" hidden>
+    <span id="bulkCount">選択中 0名</span>
+    <button id="bulkTeamBtn">チーム一括設定</button>
+    <button id="bulkColorBtn">カラー一括変更</button>
+    <button id="bulkAllBtn">全選択</button>
+    <button id="bulkClearBtn">選択解除</button>
+   </div>
    <div id="rows"></div>
    <details class="card" style="margin-top:10px" open><summary>チーム一覧・チーム色</summary><div id="teamBox" style="margin-top:6px"></div></details>
+   </div>
   </aside>
  </div>
 </main>
@@ -170,6 +213,7 @@ details.card>summary{cursor:pointer;font-weight:600}
   <div class="toolbar">
    <div class="seg" id="labSeg2"><button data-lab="short">表示名</button><button data-lab="team">チーム</button><button data-lab="both">表示名＋チーム</button></div>
    <label class="chk"><input type="checkbox" id="colChk2">列番号</label>
+   <span class="rangewrap">文字サイズ<input type="range" id="fsRange2" min="0.8" max="1.8" step="0.1"></span>
    <span class="sp"></span>
    <button id="shareBtn" class="pri">共有URLを作成</button>
    <button id="importBtn" class="pri" hidden>このデータを編集に取り込む</button>
@@ -195,13 +239,15 @@ const LS_KEY='sanpo-haichi-v1', UI_KEY='sanpo-haichi-ui-v1';
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const PAL=['#e57373','#64b5f6','#81c784','#ffb74d','#ba68c8','#4db6ac','#f06292','#a1887f','#dce775','#7986cb','#4dd0e1','#ff8a65'];
+const PAL5=['#e57373','#64b5f6','#81c784','#ffb74d','#ba68c8'];
 const GRAY='#9aa0a6';
 
 const defaultState=()=>({v:1,title:'',memo:'',map:{rows:10,cols:10,parity:0,disabled:[]},members:[],teamColors:{},placements:{}});
 let S=defaultState();
 let mode='edit', viewing=false, editSide='L', sel=null, cellEdit=false, editingId=null;
-let ui={label:'short',cols:true,filter:'all',sort:'input',q:''};
+let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:true};
 let undoStack=[], redoStack=[], idSeq=0;
+let bulkMode=false, bulkSel=new Set();
 
 const newId=()=>'m'+Date.now().toString(36)+(idSeq++).toString(36);
 const normTeam=s=>String(s==null?'':s).normalize('NFKC').replace(/\s+/g,' ').trim();
@@ -271,6 +317,18 @@ function toHex(v){
  if(h[0]!=='#'){const n=h.match(/\d+/g); if(!n) return ccache[v]=null; h='#'+n.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('');}
  return ccache[v]=h;
 }
+function addCustomColor(hex){
+ hex=toHex(hex); if(!hex) return;
+ if(PAL5.includes(hex)||ui.customColors.includes(hex)) return;
+ ui.customColors.unshift(hex);
+ if(ui.customColors.length>24) ui.customColors.length=24;
+ saveUI();
+}
+function paletteColors(){ return PAL5.concat(ui.customColors); }
+function swatchBar(cur,name){
+ const c=toHex(cur);
+ return `<div class="swatchbar" data-swatch="${name}">`+paletteColors().map(h=>`<button type="button" class="swatch${h===c?' on':''}" data-color="${h}" style="background:${h}" title="${h}"></button>`).join('')+'</div>';
+}
 function teamOrder(){const a=[];S.members.forEach(m=>{if(m.team&&!a.includes(m.team)) a.push(m.team);});return a;}
 function memberColor(m){
  return toHex(m.color)||toHex(S.teamColors[m.team])||teamColor(m.team);
@@ -296,6 +354,7 @@ function cleanup(){
  }
  if(sel&&!ids.has(sel)) sel=null;
  if(editingId&&!ids.has(editingId)) editingId=null;
+ for(const id of [...bulkSel]) if(!ids.has(id)) bulkSel.delete(id);
  for(const t of Object.keys(S.teamColors)) if(!S.members.some(m=>m.team===t)) delete S.teamColors[t];
 }
 function undo(){ if(viewing||!undoStack.length) return; redoStack.push(JSON.stringify(S)); S=JSON.parse(undoStack.pop()); cleanup(); saveLS(); renderAll(); }
@@ -340,10 +399,11 @@ function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clea
 
 /* ============ SVG描画 ============ */
 function tw(s){let w=0;for(const ch of s){const c=ch.codePointAt(0);w+=((c>=0x20&&c<=0x7e)||(c>=0xff61&&c<=0xff9f))?0.58:1;}return w;}
+let _fs=1;
 function fit(s,maxW,maxFs,d,twoOK){
  const ch=Array.from(s); let lines=[s];
  if(twoOK&&ch.length>2&&tw(s)>2.2){const h=Math.ceil(ch.length/2);lines=[ch.slice(0,h).join(''),ch.slice(h).join('')];}
- if(lines.length===2) maxFs=Math.min(maxFs,0.42*d);
+ if(lines.length===2) maxFs=Math.min(maxFs,0.42*d*_fs);
  const mw=Math.max(...lines.map(tw),0.5);
  return {lines,fs:Math.min(maxFs,maxW/mw)};
 }
@@ -354,17 +414,18 @@ function txt(lines,fs,x,y,fg,extra=''){
 }
 function cellLabel(m,x,y,d,fg){
  const short=shortOf(m); const mode=ui.label;
- if(mode==='team'){ if(!m.team) return ''; const f=fit(m.team,1.5*d,0.62*d,d,true); return txt(f.lines,f.fs,x,y,fg); }
+ if(mode==='team'){ if(!m.team) return ''; const f=fit(m.team,1.5*d,0.62*d*_fs,d,true); return txt(f.lines,f.fs,x,y,fg); }
  if(mode==='both'&&m.team){
-  const a=fit(short,1.4*d,0.5*d,d,false);
+  const a=fit(short,1.4*d,0.5*d*_fs,d,false);
   let t=Array.from(m.team); if(t.length>4) t=t.slice(0,3).concat('…');
-  const b=fit(t.join(''),0.85*d,0.3*d,d,false);
+  const b=fit(t.join(''),0.85*d,0.3*d*_fs,d,false);
   return txt(a.lines,a.fs,x,y-0.2*d,fg)+txt(b.lines,b.fs,x,y+0.5*d,fg,'opacity=".85"');
  }
- const f=fit(short,1.5*d,0.62*d,d,true); return txt(f.lines,f.fs,x,y,fg);
+ const f=fit(short,1.5*d,0.62*d*_fs,d,true); return txt(f.lines,f.fs,x,y,fg);
 }
 function mapSVG(mirror,o={}){
  const {rows:R,cols:C}=S.map, d=36, M=84;
+ _fs=ui.fontScale||1;
  const dis=new Set(S.map.disabled);
  const all=allCells().map(x=>({...x,dis:dis.has(x.key)}));
  const shown=o.cellEdit?all:all.filter(x=>!x.dis);
@@ -380,16 +441,17 @@ function mapSVG(mirror,o={}){
    if(x.dis&&!o.cellEdit) return; const k=x.r+x.c; const y=(x.r-x.c)*d;
    const e=cols[k]||(cols[k]={min:y,max:y}); e.min=Math.min(e.min,y); e.max=Math.max(e.max,y);
   });
+  const labFs=(16*_fs).toFixed(1);
   for(const k in cols){
    const n=(kmax-k)/2+1, x=X(k*d);
-   out+=`<text class="lab" x="${x}" y="${cols[k].min-d-6}">${n}</text><text class="lab" x="${x}" y="${cols[k].max+d+17}">${n}</text>`;
+   out+=`<text class="lab" font-size="${labFs}" x="${x}" y="${cols[k].min-d-6}">${n}</text><text class="lab" font-size="${labFs}" x="${x}" y="${cols[k].max+d+17}">${n}</text>`;
   }
  }
  // 前線・本陣
  const midY=(ymin+ymax)/2, frontX=mirror?vx+M/2:xmax+d+M/2, baseX=mirror?xmax+d+M/2:vx+M/2;
- out+=`<text class="fr" x="${frontX}" y="${midY-8}" font-size="30">${mirror?'◀':'▶'}</text>`+
-  `<text class="fr" x="${frontX}" y="${midY+20}" font-size="16">前線</text><text class="fr" x="${frontX}" y="${midY+38}" font-size="11">マップ中央</text>`+
-  `<text class="bs" x="${baseX}" y="${midY}" font-size="15">本陣側</text>`;
+ out+=`<text class="fr" x="${frontX}" y="${midY-8}" font-size="${(30*_fs).toFixed(1)}">${mirror?'◀':'▶'}</text>`+
+  `<text class="fr" x="${frontX}" y="${midY+20}" font-size="${(17*_fs).toFixed(1)}">前線</text><text class="fr" x="${frontX}" y="${midY+38}" font-size="${(12*_fs).toFixed(1)}">マップ中央</text>`+
+  `<text class="bs" x="${baseX}" y="${midY}" font-size="${(16*_fs).toFixed(1)}">本陣側</text>`;
  // マス
  const selKey=(!o.static&&sel)?placementOf(sel):null;
  for(const cl of shown){
@@ -419,11 +481,13 @@ function renderAll(){
  if(mode==='edit'&&!viewing) renderEdit(); else renderOut();
 }
 function setVal(el,v){ if(document.activeElement!==el&&el.value!==v) el.value=v; }
+function setRange(el,v){ if(document.activeElement!==el) el.value=v; }
 function renderEdit(){
  setVal($('#title'),S.title); setVal($('#memo'),S.memo);
  document.querySelectorAll('#sideSeg button').forEach(b=>b.classList.toggle('on',b.dataset.side===editSide));
  document.querySelectorAll('#labSeg button').forEach(b=>b.classList.toggle('on',b.dataset.lab===ui.label));
  $('#colChk').checked=ui.cols;
+ setRange($('#fsRange'),ui.fontScale);
  $('#cellEditBtn').classList.toggle('on',cellEdit); $('#cellEditBtn').style.background=cellEdit?'#fff3e0':'';
  $('#sideHead').textContent=(editSide==='L'?'左陣地の場合':'右陣地の場合')+'（編集中）'+(cellEdit?' ／ マス編集：タップで有効・無効を切替':'');
  $('#mapHost').innerHTML=mapSVG(editSide==='R',{cellEdit});
@@ -445,6 +509,13 @@ function renderList(){
  $('#stat').textContent=`配置済 ${placed} / 全 ${S.members.length}名、空きマス ${cells-placed}（マス総数 ${cells}）`;
  document.querySelectorAll('#filSeg button').forEach(b=>b.classList.toggle('on',b.dataset.fil===ui.filter));
  $('#sortSel').value=ui.sort; setVal($('#qIn'),ui.q);
+ $('#listPane').classList.toggle('collapsed',ui.listCollapsed);
+ $('#listToggle').textContent=ui.listCollapsed?'▼ ひろげる':'▲ たたむ';
+ $('#listPreview').innerHTML=S.members.map(m=>{const c=memberColor(m);return `<span class="chip" style="background:${c};color:${textColor(c)}" title="${esc(m.name)}">${esc(shortOf(m))}</span>`;}).join('')||'<span class="hint">メンバー未登録</span>';
+ $('#bulkModeBtn').classList.toggle('on',bulkMode);
+ $('#bulkModeBtn').textContent=bulkMode?'一括選択を終了':'一括選択';
+ $('#bulkBar').hidden=!bulkMode;
+ $('#bulkCount').textContent=`選択中 ${bulkSel.size}名`;
  const to=teamOrder(); const q=ui.q.normalize('NFKC').toLowerCase();
  let list=S.members.map((m,i)=>({m,i,p:placementOf(m.id)}));
  if(ui.filter==='un') list=list.filter(x=>!x.p); if(ui.filter==='pl') list=list.filter(x=>x.p);
@@ -455,26 +526,28 @@ function renderList(){
  if(ui.filter==='all') list.sort((a,b)=>(a.p?1:0)-(b.p?1:0)); // 未配置を上に（安定ソート）
  const rows=$('#rows'), sc=rows.scrollTop;
  rows.innerHTML=list.length?list.map(({m,p})=>{
-  const col=memberColor(m), s=sel===m.id;
-  let h=`<div class="mrow${s?' sel':''}${p?' placed':''}" data-mid="${m.id}"><span class="grip" title="ドラッグして配置">≡</span>`+
+  const col=memberColor(m), s=sel===m.id, bs=bulkSel.has(m.id);
+  let h=`<div class="mrow${s?' sel':''}${p?' placed':''}" data-mid="${m.id}">`+
+   (bulkMode?`<input type="checkbox" class="bsel" data-mid="${m.id}"${bs?' checked':''}>`:`<span class="grip" title="ドラッグして配置">≡</span>`)+
    `<span class="chip" style="background:${col};color:${textColor(col)}">${esc(shortOf(m))}</span>`+
    `<span class="mname">${esc(m.name)}<small>${esc(m.team)}</small></span><span class="pos">${p?'配置済':'未配置'}</span>`+
    `<button data-act="edit" title="編集">✎</button></div>`;
   if(editingId===m.id){
-   h+=`<div class="edrow" data-eid="${m.id}"><label>メンバー名</label><input type="text" data-f="name" value="${esc(m.name)}">`+
-    `<label>チーム</label><input type="text" data-f="team" value="${esc(m.team)}" placeholder="数字・英字・漢字など自由">`+
+   h+=`<div class="edrow" data-eid="${m.id}"><div class="full hint">メンバー名以外の項目は空欄のままで構いません。</div><label>メンバー名</label><input type="text" data-f="name" value="${esc(m.name)}">`+
+    `<label>チーム</label><input type="text" data-f="team" value="${esc(m.team)}" placeholder="（任意）">`+
     `<label>表示名</label><input type="text" data-f="short" value="${esc(m.short)}" placeholder="${esc(defShort(m.name))}（自動）">`+
     `<label>カラー</label><div class="cw"><input type="text" data-f="color" value="${esc(m.color)}" placeholder="空欄＝チーム色" style="flex:1"><input type="color" data-f="colorpick" value="${col}"></div>`+
+    `<div class="full">${swatchBar(col,'m:'+m.id)}</div>`+
     `<div class="full">${p?'<button data-act="unplace">配置解除</button>':''}<button data-act="del" class="dan">このメンバーを削除</button><button data-act="close">閉じる</button></div></div>`;
   }
   return h;
- }).join(''):'<div class="stat">該当するメンバーがいません。CSV読込・貼り付け読込・＋1名追加で登録してください。</div>';
+ }).join(''):'<div class="stat">該当するメンバーがいません。読込・書き出しメニュー、または＋1名追加で登録してください。</div>';
  rows.scrollTop=sc;
  // チーム一覧
  $('#teamBox').innerHTML=to.length?to.map(t=>{
   const n=S.members.filter(m=>m.team===t).length;
   return `<div class="teamrow" data-team="${esc(t)}"><input type="color" value="${teamColor(t)}"><span class="nm">${esc(t)}</span><small>${n}名</small>`+
-   (S.teamColors[t]?'<button data-act="treset">自動色に戻す</button>':'')+'</div>';
+   (S.teamColors[t]?'<button data-act="treset">自動色に戻す</button>':'')+swatchBar(teamColor(t),'t:'+t)+'</div>';
  }).join(''):'<div class="stat">チームはまだありません。</div>';
 }
 
@@ -482,6 +555,7 @@ function renderList(){
 function renderOut(){
  document.querySelectorAll('#labSeg2 button').forEach(b=>b.classList.toggle('on',b.dataset.lab===ui.label));
  $('#colChk2').checked=ui.cols;
+ setRange($('#fsRange2'),ui.fontScale);
  $('#oTitle').textContent=S.title||'（タイトル未設定）'; $('#oMemo').textContent=S.memo;
  $('#importBtn').hidden=!viewing;
  $('#mapL').innerHTML=mapSVG(false,{static:true}); $('#mapR').innerHTML=mapSVG(true,{static:true});
@@ -531,13 +605,13 @@ async function makeShare(){
 /* ============ CSV ============ */
 function parseTable(text){
  text=text.replace(/^﻿/,'').replace(/\r\n?/g,'\n');
- const delim=text.includes('\t')?'\t':',';
+ const delims=text.includes('\t')?new Set(['\t']):new Set([',','，','、','。']);
  const rows=[]; let row=[],cur='',q=false;
  for(let i=0;i<text.length;i++){
   const ch=text[i];
   if(q){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
   else if(ch==='"'&&cur==='') q=true;
-  else if(ch===delim){row.push(cur);cur='';}
+  else if(delims.has(ch)){row.push(cur);cur='';}
   else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
   else cur+=ch;
  }
@@ -649,7 +723,7 @@ document.addEventListener('pointerdown',e=>{
  else if(e.target.closest('#mapHost')) d={kind:'blank'};
  else return;
  d.id=e.pointerId; d.sx=d.x=e.clientX; d.sy=d.y=e.clientY; d.touch=e.pointerType!=='mouse'; d.active=false;
- if(d.kind==='row'&&d.touch&&!d.grip) d.timer=setTimeout(()=>{ if(drag===d&&!d.active) startGhost(); },380);
+ if(d.kind==='row'&&d.touch&&!d.grip&&!bulkMode) d.timer=setTimeout(()=>{ if(drag===d&&!d.active) startGhost(); },380);
  drag=d;
 });
 document.addEventListener('pointermove',e=>{
@@ -659,6 +733,7 @@ document.addEventListener('pointermove',e=>{
  if(!drag.active){
   if(drag.kind==='blank'||cellEdit||(drag.kind==='cell'&&!drag.mid)){ if(dist>8) drag.tapCancel=true; return; }
   if(drag.kind==='row'&&drag.touch&&!drag.grip){ if(dist>8){clearTimeout(drag.timer);drag.tapCancel=true;} return; }
+  if(drag.kind==='row'&&bulkMode){ if(dist>8) drag.tapCancel=true; return; }
   if(dist>5) startGhost();
   return;
  }
@@ -684,7 +759,10 @@ document.addEventListener('pointerup',e=>{
 });
 function tap(d){
  if(d.kind==='blank'){ if(sel){sel=null;renderAll();} return; }
- if(d.kind==='row'){ sel=(sel===d.mid)?null:d.mid; renderAll(); return; }
+ if(d.kind==='row'){
+  if(bulkMode){ if(bulkSel.has(d.mid)) bulkSel.delete(d.mid); else bulkSel.add(d.mid); renderList(); return; }
+  sel=(sel===d.mid)?null:d.mid; renderAll(); return;
+ }
  // cell
  if(cellEdit){
   mutate(()=>{ const i=S.map.disabled.indexOf(d.key); if(i>=0) S.map.disabled.splice(i,1); else S.map.disabled.push(d.key); });
@@ -723,6 +801,9 @@ document.querySelectorAll('#sideSeg button').forEach(b=>b.onclick=()=>{editSide=
 document.querySelectorAll('#labSeg button,#labSeg2 button').forEach(b=>b.onclick=()=>{ui.label=b.dataset.lab;saveUI();renderAll();});
 $('#colChk').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
 $('#colChk2').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
+$('#fsRange').oninput=e=>{ui.fontScale=+e.target.value;saveUI();renderAll();};
+$('#fsRange2').oninput=e=>{ui.fontScale=+e.target.value;saveUI();renderAll();};
+$('#listToggle').onclick=()=>{ui.listCollapsed=!ui.listCollapsed;saveUI();renderList();};
 document.querySelectorAll('#filSeg button').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.fil;saveUI();renderList();});
 $('#sortSel').onchange=e=>{ui.sort=e.target.value;saveUI();renderList();};
 $('#qIn').oninput=e=>{ui.q=e.target.value;renderList();};
@@ -734,15 +815,63 @@ $('#cellEditBtn').onclick=()=>{cellEdit=!cellEdit;sel=null;renderAll();};
 $('#clearBtn').onclick=async()=>{ if(!Object.keys(S.placements).length){toast('配置されているメンバーはいません');return;}
  if(await confirmDlg('全配置クリア','配置をすべて解除します（メンバー表は残ります）。','クリアする',true)) mutate(()=>{S.placements={};}); };
 $('#newBtn').onclick=async()=>{ if(await confirmDlg('新しい配置図','編集中のデータ（メンバー表・配置・設定）をすべて初期化します。','初期化する',true)){ snap(); S=defaultState(); sel=null;editingId=null;cellEdit=false; saveLS(); renderAll(); } };
-$('#fileBtn').onclick=()=>$('#fileIn').click();
-$('#fileIn').onchange=e=>{const f=e.target.files[0]; if(f) readFile(f); e.target.value='';};
-$('#pasteBtn').onclick=async()=>{
- const ta=document.createElement('textarea'); ta.rows=9; ta.placeholder='スプレッドシートからコピーした表（タブ区切り）、CSV、または名前だけを1行1名で貼り付け\n列順：メンバー名, チーム, 表示名, カラー';
- const b=document.createElement('div'); b.innerHTML='<div class="stat">見出し行は自動で判定します。チームは数字・英字・漢字など何でも使えます。</div>'; b.appendChild(ta);
+async function openPasteDialog(){
+ const ta=document.createElement('textarea'); ta.rows=9; ta.placeholder='例）\nたろう,1組,たろ,#e57373\nはなこ,2組\nじろう';
+ const b=document.createElement('div');
+ b.innerHTML='<div class="stat">'+
+  '1行につき1名、区切り文字（<b>, ／ ， ／ 、 ／ 。</b> のいずれか。表計算ソフトからのコピーはタブ区切りを自動で認識）で区切って入力します。区切り文字の前後の空白は無視されます。<br>'+
+  '列の順番：<b>① メンバー名（必須）→ ② チーム → ③ 表示名 → ④ カラー</b>。②〜④は省略できます。<br>'+
+  '例：たろう,1組,たろ,#e57373<br>'+
+  '先頭行に「メンバー名」「チーム」などの見出しが含まれている場合は、その行を自動で見出しと判定して読み飛ばします。'+
+  '</div>';
+ b.appendChild(ta);
  const r=await dialog({title:'貼り付け読込',body:b,buttons:[{t:'キャンセル',v:false},{t:'読込',v:true,cls:'pri'}]});
  if(r&&ta.value.trim()) importText(ta.value);
+}
+$('#dataMenuBtn').onclick=e=>{e.stopPropagation();$('#dataMenu').hidden=!$('#dataMenu').hidden;};
+$('#dataMenu').addEventListener('click',e=>{
+ const b=e.target.closest('[data-act]'); if(!b) return;
+ $('#dataMenu').hidden=true; const act=b.dataset.act;
+ if(act==='file') $('#fileIn').click();
+ else if(act==='paste') openPasteDialog();
+ else if(act==='export') exportCSV();
+});
+document.addEventListener('click',e=>{ if(!e.target.closest('.menuwrap')) $('#dataMenu').hidden=true; });
+$('#fileIn').onchange=e=>{const f=e.target.files[0]; if(f) readFile(f); e.target.value='';};
+$('#bulkModeBtn').onclick=()=>{bulkMode=!bulkMode; if(!bulkMode) bulkSel.clear(); renderList();};
+$('#bulkAllBtn').onclick=()=>{document.querySelectorAll('#rows .mrow').forEach(r=>bulkSel.add(r.dataset.mid)); renderList();};
+$('#bulkClearBtn').onclick=()=>{bulkSel.clear(); renderList();};
+$('#bulkTeamBtn').onclick=async()=>{
+ if(!bulkSel.size){toast('メンバーを選択してください');return;}
+ const el=document.createElement('div');
+ el.innerHTML=`<div class="hint">選択中 ${bulkSel.size}名 のチームをまとめて設定します（空欄でチーム解除）。</div>`+
+  `<div class="f"><label>チーム名</label><input type="text" id="bkTeam" list="teamList"></div><datalist id="teamList">${teamOrder().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
+ const r=await dialog({title:'チーム一括設定',body:el,buttons:[{t:'キャンセル',v:false},{t:'設定',v:true,cls:'pri'}]});
+ if(!r) return;
+ const v=normTeam(el.querySelector('#bkTeam').value), ids=[...bulkSel];
+ mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.team=v; } });
+ toast(`${ids.length}名のチームを設定しました`);
 };
-$('#csvOutBtn').onclick=exportCSV;
+$('#bulkColorBtn').onclick=async()=>{
+ if(!bulkSel.size){toast('メンバーを選択してください');return;}
+ const el=document.createElement('div');
+ el.innerHTML=`<div class="hint">選択中 ${bulkSel.size}名 のカラーをまとめて設定します（空欄でチーム色に戻す）。</div>`+
+  swatchBar('','bulk')+
+  `<div class="f"><label>カラー</label><div class="cw"><input type="text" id="bkColor" placeholder="空欄＝チーム色" style="flex:1"><input type="color" id="bkColorPick" value="#e57373"></div></div>`;
+ el.querySelector('[data-swatch="bulk"]').addEventListener('click',e=>{
+  const s=e.target.closest('.swatch'); if(!s) return;
+  el.querySelector('#bkColor').value=s.dataset.color; el.querySelector('#bkColorPick').value=s.dataset.color;
+ });
+ el.querySelector('#bkColorPick').addEventListener('input',e=>{ el.querySelector('#bkColor').value=e.target.value; });
+ const r=await dialog({title:'カラー一括変更',body:el,buttons:[{t:'キャンセル',v:false},{t:'設定',v:true,cls:'pri'}]});
+ if(!r) return;
+ let v=el.querySelector('#bkColor').value.trim();
+ if(v&&!toHex(v)){toast('色を認識できません（例：#ff8800、orange）');return;}
+ if(v) addCustomColor(v);
+ const ids=[...bulkSel];
+ mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.color=v; } });
+ toast(`${ids.length}名のカラーを設定しました`);
+};
 $('#addBtn').onclick=()=>{
  let n=1; while(S.members.some(m=>m.name==='新規'+n)) n++;
  const id=newId(); mutate(()=>{S.members.push({id,name:'新規'+n,team:'',short:'',color:''});});
@@ -750,6 +879,13 @@ $('#addBtn').onclick=()=>{
  setTimeout(()=>{const i=document.querySelector(`[data-eid="${id}"] input`); if(i){i.scrollIntoView({block:'nearest'});i.select();}},30);
 };
 $('#rows').addEventListener('click',e=>{
+ const sw=e.target.closest('.swatch');
+ if(sw){
+  const bar=sw.closest('[data-swatch]'); if(!bar) return;
+  const [kind,mid]=bar.dataset.swatch.split(':'); if(kind!=='m') return;
+  const m=memberById(mid); if(!m) return;
+  mutate(()=>{m.color=sw.dataset.color;}); return;
+ }
  const btn=e.target.closest('[data-act]'); if(!btn) return;
  const row=btn.closest('[data-mid]'), ed=btn.closest('[data-eid]'); const id=row?row.dataset.mid:ed.dataset.eid;
  const act=btn.dataset.act;
@@ -759,20 +895,28 @@ $('#rows').addEventListener('click',e=>{
  else if(act==='del') confirmDlg('メンバー削除','このメンバーを削除します（配置も解除されます）。','削除する',true).then(ok=>{ if(ok) mutate(()=>{S.members=S.members.filter(m=>m.id!==id);}); });
 });
 $('#rows').addEventListener('change',e=>{
+ if(e.target.classList.contains('bsel')){
+  const id=e.target.dataset.mid; if(e.target.checked) bulkSel.add(id); else bulkSel.delete(id);
+  $('#bulkCount').textContent=`選択中 ${bulkSel.size}名`; return;
+ }
  const f=e.target.dataset.f; if(!f) return;
  const id=e.target.closest('[data-eid]').dataset.eid, m=memberById(id); if(!m) return;
  let v=e.target.value;
  if(f==='name'){ v=normName(v); if(!v||S.members.some(x=>x.id!==id&&x.name===v)){toast(v?'同じ名前のメンバーがいます':'名前は必須です');renderList();return;} mutate(()=>{m.name=v;}); }
  else if(f==='team'){ v=normTeam(v); mutate(()=>{m.team=v;}); }
  else if(f==='short'){ mutate(()=>{m.short=v.trim();}); }
- else if(f==='color'){ v=v.trim(); if(v&&!toHex(v)){toast('色を認識できません（例：#ff8800、orange）');renderList();return;} mutate(()=>{m.color=v;}); }
- else if(f==='colorpick'){ mutate(()=>{m.color=v;}); }
+ else if(f==='color'){ v=v.trim(); if(v&&!toHex(v)){toast('色を認識できません（例：#ff8800、orange）');renderList();return;} if(v) addCustomColor(v); mutate(()=>{m.color=v;}); }
+ else if(f==='colorpick'){ addCustomColor(v); mutate(()=>{m.color=v;}); }
 });
 $('#teamBox').addEventListener('change',e=>{
- if(e.target.type!=='color') return; const t=e.target.closest('[data-team]').dataset.team; mutate(()=>{S.teamColors[t]=e.target.value;});
+ if(e.target.type!=='color') return; const t=e.target.closest('[data-team]').dataset.team; addCustomColor(e.target.value); mutate(()=>{S.teamColors[t]=e.target.value;});
 });
 $('#teamBox').addEventListener('click',e=>{
- const b=e.target.closest('[data-act="treset"]'); if(!b) return; const t=b.closest('[data-team]').dataset.team; mutate(()=>{delete S.teamColors[t];});
+ const b=e.target.closest('[data-act="treset"]');
+ if(b){ const t=b.closest('[data-team]').dataset.team; mutate(()=>{delete S.teamColors[t];}); return; }
+ const sw=e.target.closest('.swatch'); if(!sw) return;
+ const t=sw.closest('[data-team]').dataset.team;
+ mutate(()=>{S.teamColors[t]=sw.dataset.color;});
 });
 $('#shareBtn').onclick=makeShare;
 $('#importBtn').onclick=async()=>{
