@@ -42,8 +42,9 @@ main{padding:12px;max-width:1500px;margin:0 auto}
 label.chk{display:inline-flex;align-items:center;gap:4px}
 #mapSticky{background:var(--card)}
 .mapwrap{text-align:center}
-svg.map{width:100%;height:auto;max-height:76vh;display:block;margin:0 auto;touch-action:none;user-select:none;-webkit-user-select:none;background:#fff;border-radius:8px}
+svg.map{width:100%;height:auto;max-height:76vh;display:block;margin:0 auto;touch-action:pan-y pinch-zoom;user-select:none;-webkit-user-select:none;background:#fff;border-radius:8px}
 svg.map text{pointer-events:none;font-family:inherit}
+#outView svg.map{touch-action:pan-y pinch-zoom}
 svg.map .cell polygon{stroke-linejoin:round}
 svg.map .cell.empty polygon{fill:#eef0f4;stroke:#c8cdd6;stroke-width:1.5}
 svg.map .cell.filled polygon{stroke:#fff;stroke-width:1.5}
@@ -896,6 +897,7 @@ function startGhost(){
  const g=document.createElement('div'); g.className='ghost'; const c=memberColor(m);
  g.innerHTML=`<span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>`;
  document.body.appendChild(g); drag.ghost=g; drag.active=true; moveGhost(drag.x,drag.y);
+ if(drag.touch) navigator.vibrate?.(15);
 }
 function moveGhost(x,y){ if(drag.ghost){drag.ghost.style.left=x+'px';drag.ghost.style.top=y+'px';} }
 function cellAt(x,y){ const e=document.elementFromPoint(x,y); return e&&e.closest?e.closest('#mapHost [data-key]'):null; }
@@ -913,7 +915,7 @@ document.addEventListener('pointerdown',e=>{
  else if(e.target.closest('#mapHost')) d={kind:'blank'};
  else return;
  d.id=e.pointerId; d.sx=d.x=e.clientX; d.sy=d.y=e.clientY; d.touch=e.pointerType!=='mouse'; d.active=false;
- if(d.kind==='row'&&d.touch&&!d.grip&&!bulkMode) d.timer=setTimeout(()=>{ if(drag===d&&!d.active) startGhost(); },380);
+ if((d.kind==='row'&&d.touch&&!d.grip&&!bulkMode)||(d.kind==='cell'&&d.mid&&d.touch)) d.timer=setTimeout(()=>{ if(drag===d&&!d.active) startGhost(); },380);
  drag=d;
 });
 document.addEventListener('pointermove',e=>{
@@ -922,7 +924,7 @@ document.addEventListener('pointermove',e=>{
  const dist=Math.hypot(drag.x-drag.sx,drag.y-drag.sy);
  if(!drag.active){
   if(drag.kind==='blank'||(drag.kind==='cell'&&!drag.mid)){ if(dist>8) drag.tapCancel=true; return; }
-  if(drag.kind==='row'&&drag.touch&&!drag.grip){ if(dist>8){clearTimeout(drag.timer);drag.tapCancel=true;} return; }
+  if((drag.kind==='row'&&!drag.grip||drag.kind==='cell')&&drag.touch){ if(dist>8){clearTimeout(drag.timer);drag.tapCancel=true;} return; }
   if(drag.kind==='row'&&bulkMode){ if(dist>8) drag.tapCancel=true; return; }
   if(dist>5) startGhost();
   return;
@@ -982,7 +984,8 @@ function openCellPicker(key){
  const close=()=>{ ov.remove(); document.removeEventListener('keydown',kd,true); };
  const kd=e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
  document.addEventListener('keydown',kd,true);
- listEl.onclick=e=>{ const row=e.target.closest('[data-mid]'); if(!row) return; close(); place(row.dataset.mid,key); };
+ const t0=Date.now(); // タップで開いた直後に届く同じタップの click で誤配置しないよう無視
+ listEl.onclick=e=>{ if(Date.now()-t0<400) return; const row=e.target.closest('[data-mid]'); if(!row) return; close(); place(row.dataset.mid,key); };
  dl.querySelector('#cpCancel').onclick=close;
  qEl.focus();
 }
