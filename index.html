@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三方配置図ツール</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--line:#d9dde3;--tx:#1f2430;--sub:#6b7280;--pri:#1f6feb;--pri2:#e8f0fe;--warn:#e65100;--dan:#c62828}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;background:var(--bg);color:var(--tx);font-size:14px;line-height:1.45}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:6px;padding:5px 10px}
+button:hover{background:#f0f2f5}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+button.pri:hover{background:#1a5fd0}
+button.dan{color:var(--dan)}
+button:disabled{opacity:.4;cursor:default}
+input[type=text],input[type=number],select,textarea{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:#fff;min-width:0}
+textarea{width:100%;resize:vertical}
+header#top{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px}
+header h1{font-size:16px;margin:0 8px 0 0}
+.tabs{display:flex;gap:0}
+.tabs button{border-radius:0;margin-left:-1px}
+.tabs button:first-child{border-radius:6px 0 0 6px;margin-left:0}
+.tabs button:last-child{border-radius:0 6px 6px 0}
+.tabs button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+.sp{flex:1}
+.badge{background:#fff3e0;color:var(--warn);border:1px solid #ffcc80;border-radius:99px;padding:2px 10px;font-weight:600}
+main{padding:12px;max-width:1500px;margin:0 auto}
+.layout{display:grid;grid-template-columns:360px 1fr;gap:12px;align-items:start}
+#listPane{grid-column:1;grid-row:1}
+#mapPane{grid-column:2;grid-row:1;min-width:0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px}
+.toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:6px 0 0 6px;margin-left:0}
+.seg button:last-child{border-radius:0 6px 6px 0}
+.seg button.on{background:var(--pri2);border-color:var(--pri);color:var(--pri);font-weight:600;position:relative}
+label.chk{display:inline-flex;align-items:center;gap:4px}
+#mapSticky{background:var(--card)}
+.mapwrap{text-align:center}
+svg.map{width:100%;height:auto;max-height:76vh;display:block;margin:0 auto;touch-action:none;user-select:none;-webkit-user-select:none;background:#fff;border-radius:8px}
+svg.map text{pointer-events:none;font-family:inherit}
+svg.map .cell polygon{stroke-linejoin:round}
+svg.map .cell.empty polygon{fill:#eef0f4;stroke:#c8cdd6;stroke-width:1.5}
+svg.map .cell.filled polygon{stroke:#fff;stroke-width:1.5}
+svg.map .cell.dis polygon{fill:#fafafa;stroke:#aaa;stroke-width:1.5;stroke-dasharray:4 3}
+svg.map .cell.sel polygon{stroke:#ff6d00;stroke-width:5;animation:blink 1s infinite}
+svg.map .cell.drop polygon{stroke:#1976d2;stroke-width:5}
+svg.map .cell.hl polygon{stroke:#ff6d00;stroke-width:4}
+@keyframes blink{50%{stroke-opacity:.35}}
+.lab{fill:#555;font-size:13px;text-anchor:middle}
+.fr{fill:#c62828;text-anchor:middle;font-weight:700}
+.bs{fill:#6b7280;text-anchor:middle;font-weight:600}
+#infoBar{margin-top:8px;padding:8px 10px;border-radius:8px;background:#f0f4ff;border:1px solid #cfdcff;min-height:38px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+#infoBar .grow{flex:1;min-width:150px}
+.side-h{font-weight:700;margin:2px 0 4px;text-align:center}
+.mrow{display:flex;align-items:center;gap:8px;padding:5px 6px;border:1px solid transparent;border-bottom-color:#eef0f3;border-radius:6px;user-select:none;-webkit-user-select:none}
+.mrow.sel{border-color:#ff6d00;background:#fff4e8}
+.mrow.placed .pos{color:var(--sub)}
+.mrow .grip{cursor:grab;color:#9aa0a8;padding:4px 6px;touch-action:none;font-size:16px}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:26px;padding:0 6px;border-radius:5px;font-weight:700;font-size:13px;white-space:nowrap;border:1px solid rgba(0,0,0,.12)}
+.mname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mname small{color:var(--sub);margin-left:6px}
+.pos{font-size:12px}
+.edrow{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:8px;margin:2px 0 6px;display:grid;grid-template-columns:70px 1fr;gap:5px 8px;align-items:center}
+.edrow .full{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.edrow input[type=text]{width:100%}
+.edrow .cw{display:flex;gap:6px}
+input[type=color]{width:38px;height:30px;padding:1px;border:1px solid var(--line);border-radius:6px;background:#fff}
+#rows{max-height:52vh;overflow:auto}
+.teamrow{display:flex;align-items:center;gap:6px;padding:2px 0}
+.teamrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+details.card>summary{cursor:pointer;font-weight:600}
+.stat{color:var(--sub);margin:6px 0}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:12px}
+.dlg{background:#fff;border-radius:12px;padding:16px;max-width:520px;width:100%;max-height:90vh;overflow:auto}
+.dlg h3{margin:0 0 8px}
+.dbtn{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px}
+.dlg .f{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin:6px 0}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:8px;z-index:200;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:.95}
+.ghost{position:fixed;z-index:150;pointer-events:none;transform:translate(-50%,-140%);opacity:.9}
+.ghost .chip{height:34px;min-width:44px;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
+.bubble{position:fixed;z-index:120;background:#222;color:#fff;padding:6px 10px;border-radius:8px;transform:translate(-50%,-120%);pointer-events:none;font-size:13px;max-width:70vw}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.note{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:6px 10px;margin:8px 0;font-weight:600}
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px}
+.legend .g{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff}
+.legend .g h4{margin:0 0 4px;display:flex;align-items:center;gap:6px}
+.legend .it{display:flex;align-items:center;gap:6px;padding:1px 0}
+.memo{white-space:pre-wrap;margin:6px 0}
+.title{font-size:20px;font-weight:700;margin:4px 0}
+.urlbox{width:100%;font-size:12px}
+@media(max-width:900px){
+ .layout{grid-template-columns:1fr}
+ #mapPane{grid-column:1;grid-row:1}
+ #listPane{grid-column:1;grid-row:2}
+ #mapSticky{position:sticky;top:44px;z-index:20;padding-bottom:4px;box-shadow:0 4px 8px -6px rgba(0,0,0,.4)}
+ svg.map{max-height:48vh}
+ #rows{max-height:none}
+ .pair{grid-template-columns:1fr}
+ main{padding:8px}
+}
+</style>
+</head>
+<body>
+<header id="top">
+ <h1>三方配置図ツール</h1>
+ <div class="tabs" id="tabs"><button data-mode="edit">編集</button><button data-mode="out">出力</button></div>
+ <span class="badge" id="viewBadge" hidden>閲覧モード</span>
+ <span class="sp"></span>
+ <button id="undoBtn" title="元に戻す (Ctrl+Z)">↶ 戻す</button>
+ <button id="redoBtn" title="やり直し (Ctrl+Y)">↷ やり直し</button>
+ <button id="newBtn">新しい配置図</button>
+</header>
+
+<main id="editView">
+ <div class="layout">
+  <section id="mapPane" class="card">
+   <div class="toolbar">
+    <input type="text" id="title" placeholder="タイトル（例：9/28 三方戦）" style="flex:1;min-width:180px">
+   </div>
+   <div class="toolbar">
+    <div class="seg" id="sideSeg"><button data-side="L">左陣地で編集</button><button data-side="R">右陣地で編集</button></div>
+    <div class="seg" id="labSeg"><button data-lab="short">表示名</button><button data-lab="team">チーム</button><button data-lab="both">表示名＋チーム</button></div>
+    <label class="chk"><input type="checkbox" id="colChk">列番号</label>
+   </div>
+   <div class="toolbar">
+    <button id="mapCfgBtn">マップ設定</button>
+    <button id="cellEditBtn">マス編集</button>
+    <button id="clearBtn" class="dan">全配置クリア</button>
+   </div>
+   <div id="mapSticky">
+    <div class="side-h" id="sideHead"></div>
+    <div class="mapwrap" id="mapHost"></div>
+    <div id="infoBar"></div>
+   </div>
+   <div class="note">中央方向が先頭（前線）です</div>
+   <textarea id="memo" rows="2" placeholder="メモ（任意）"></textarea>
+  </section>
+
+  <aside id="listPane" class="card">
+   <div class="toolbar">
+    <button id="fileBtn">CSV読込</button>
+    <input type="file" id="fileIn" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
+    <button id="pasteBtn">貼り付け読込</button>
+    <button id="addBtn">＋1名追加</button>
+    <button id="csvOutBtn">CSV書き出し</button>
+   </div>
+   <div class="stat" id="stat"></div>
+   <div class="toolbar">
+    <div class="seg" id="filSeg"><button data-fil="all">すべて</button><button data-fil="un">未配置</button><button data-fil="pl">配置済</button></div>
+    <select id="sortSel"><option value="input">入力順</option><option value="team">チーム順</option><option value="name">名前順</option></select>
+    <input type="text" id="qIn" placeholder="名前・チーム検索" style="flex:1;min-width:110px">
+   </div>
+   <div id="rows"></div>
+   <details class="card" style="margin-top:10px" open><summary>チーム一覧・チーム色</summary><div id="teamBox" style="margin-top:6px"></div></details>
+  </aside>
+ </div>
+</main>
+
+<main id="outView" hidden>
+ <div class="card">
+  <div class="title" id="oTitle"></div>
+  <div class="memo" id="oMemo"></div>
+  <div class="toolbar">
+   <div class="seg" id="labSeg2"><button data-lab="short">表示名</button><button data-lab="team">チーム</button><button data-lab="both">表示名＋チーム</button></div>
+   <label class="chk"><input type="checkbox" id="colChk2">列番号</label>
+   <span class="sp"></span>
+   <button id="shareBtn" class="pri">共有URLを作成</button>
+   <button id="importBtn" class="pri" hidden>このデータを編集に取り込む</button>
+  </div>
+  <div id="shareBox" hidden></div>
+  <div class="note">中央方向が先頭（前線）です</div>
+  <div class="pair">
+   <div><div class="side-h">左陣地の場合</div><div class="mapwrap" id="mapL"></div></div>
+   <div><div class="side-h">右陣地の場合</div><div class="mapwrap" id="mapR"></div></div>
+  </div>
+  <div class="legend" id="legend"></div>
+  <div id="unplacedBox"></div>
+ </div>
+</main>
+
+<div id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<script>
+"use strict";
+/* ============ 基本 ============ */
+const LS_KEY='sanpo-haichi-v1', UI_KEY='sanpo-haichi-ui-v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PAL=['#e57373','#64b5f6','#81c784','#ffb74d','#ba68c8','#4db6ac','#f06292','#a1887f','#dce775','#7986cb','#4dd0e1','#ff8a65'];
+const GRAY='#9aa0a6';
+
+const defaultState=()=>({v:1,title:'',memo:'',map:{rows:10,cols:10,parity:0,disabled:[]},members:[],teamColors:{},placements:{}});
+let S=defaultState();
+let mode='edit', viewing=false, editSide='L', sel=null, cellEdit=false, editingId=null;
+let ui={label:'short',cols:true,filter:'all',sort:'input',q:''};
+let undoStack=[], redoStack=[], idSeq=0;
+
+const newId=()=>'m'+Date.now().toString(36)+(idSeq++).toString(36);
+const normTeam=s=>String(s==null?'':s).normalize('NFKC').replace(/\s+/g,' ').trim();
+const normName=s=>String(s==null?'':s).trim();
+
+function saveLS(){ if(viewing) return; try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){} }
+function saveUI(){ try{localStorage.setItem(UI_KEY,JSON.stringify(ui));}catch(e){} }
+function loadLS(){
+ try{const t=localStorage.getItem(UI_KEY); if(t) Object.assign(ui,JSON.parse(t)); ui.q='';}catch(e){}
+ try{const t=localStorage.getItem(LS_KEY); if(t){ S=sanitize(JSON.parse(t)); }}catch(e){}
+}
+
+function sanitize(o){
+ const s=defaultState();
+ if(!o||typeof o!=='object') return s;
+ s.title=String(o.title||''); s.memo=String(o.memo||'');
+ const m=o.map||{};
+ s.map.rows=clamp(parseInt(m.rows)||10,2,30); s.map.cols=clamp(parseInt(m.cols)||10,2,30);
+ s.map.parity=m.parity===1?1:0;
+ s.map.disabled=Array.isArray(m.disabled)?m.disabled.map(String):[];
+ const seen=new Set();
+ (Array.isArray(o.members)?o.members:[]).forEach(x=>{
+  if(!x) return; const name=normName(x.name); if(!name||seen.has(name)) return; seen.add(name);
+  s.members.push({id:String(x.id||newId()),name,team:normTeam(x.team),short:String(x.short||'').trim(),color:String(x.color||'').trim()});
+ });
+ if(o.teamColors&&typeof o.teamColors==='object') for(const k in o.teamColors){ if(toHex(o.teamColors[k])) s.teamColors[normTeam(k)]=o.teamColors[k]; }
+ const ids=new Set(s.members.map(m=>m.id)), used=new Set();
+ if(o.placements&&typeof o.placements==='object') for(const k in o.placements){
+  const id=o.placements[k]; if(ids.has(id)&&!used.has(id)&&isCellIn(s,k)){ s.placements[k]=id; used.add(id); }
+ }
+ return s;
+}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+
+/* ============ マップ幾何 ============ */
+function isCellIn(s,key){
+ const [r,c]=key.split(',').map(Number); const m=s.map;
+ return Number.isInteger(r)&&Number.isInteger(c)&&r>=0&&c>=0&&r<m.rows&&c<m.cols&&((r+c)%2===m.parity)&&!m.disabled.includes(key);
+}
+function allCells(s=S){
+ const a=[]; for(let r=0;r<s.map.rows;r++)for(let c=0;c<s.map.cols;c++) if((r+c)%2===s.map.parity) a.push({r,c,key:r+','+c});
+ return a;
+}
+const validCells=(s=S)=>allCells(s).filter(x=>!s.map.disabled.includes(x.key));
+const memberById=id=>S.members.find(m=>m.id===id);
+const placementOf=id=>Object.keys(S.placements).find(k=>S.placements[k]===id)||null;
+
+/* ============ 表示名・色 ============ */
+function defShort(name){
+ let out='',b=0;
+ for(const ch of Array.from(name)){
+  const c=ch.codePointAt(0);
+  const w=((c>=0x20&&c<=0x7e)||(c>=0xff61&&c<=0xff9f))?1:2;
+  if(b+w>2) break; out+=ch; b+=w;
+ }
+ return out;
+}
+const shortOf=m=>m.short||defShort(m.name);
+const cctx=document.createElement('canvas').getContext('2d');
+const ccache={};
+function toHex(v){
+ if(!v) return null; v=String(v).trim(); if(!v) return null;
+ if(v in ccache) return ccache[v];
+ cctx.fillStyle='#010203'; cctx.fillStyle=v;
+ let h=cctx.fillStyle;
+ if(h==='#010203'&&v.toLowerCase().replace(/\s/g,'')!=='#010203'&&v.toLowerCase()!=='#123'){ return ccache[v]=null; }
+ if(h[0]!=='#'){const n=h.match(/\d+/g); if(!n) return ccache[v]=null; h='#'+n.slice(0,3).map(x=>(+x).toString(16).padStart(2,'0')).join('');}
+ return ccache[v]=h;
+}
+function teamOrder(){const a=[];S.members.forEach(m=>{if(m.team&&!a.includes(m.team)) a.push(m.team);});return a;}
+function memberColor(m){
+ return toHex(m.color)||toHex(S.teamColors[m.team])||teamColor(m.team);
+}
+function teamColor(t){
+ if(!t) return GRAY;
+ const c=toHex(S.teamColors[t]); if(c) return c;
+ return PAL[teamOrder().indexOf(t)%PAL.length];
+}
+function textColor(hex){
+ const n=parseInt(hex.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;
+ return (0.299*r+0.587*g+0.114*b)/255>0.62?'#1b1b1b':'#fff';
+}
+
+/* ============ Undo ============ */
+function snap(){undoStack.push(JSON.stringify(S)); if(undoStack.length>80) undoStack.shift(); redoStack=[];}
+function mutate(fn){ snap(); fn(); cleanup(); saveLS(); renderAll(); }
+function cleanup(){
+ const ids=new Set(S.members.map(m=>m.id)), used=new Set();
+ for(const k of Object.keys(S.placements)){
+  const id=S.placements[k];
+  if(!ids.has(id)||used.has(id)||!isCellIn(S,k)) delete S.placements[k]; else used.add(id);
+ }
+ if(sel&&!ids.has(sel)) sel=null;
+ if(editingId&&!ids.has(editingId)) editingId=null;
+ for(const t of Object.keys(S.teamColors)) if(!S.members.some(m=>m.team===t)) delete S.teamColors[t];
+}
+function undo(){ if(viewing||!undoStack.length) return; redoStack.push(JSON.stringify(S)); S=JSON.parse(undoStack.pop()); cleanup(); saveLS(); renderAll(); }
+function redo(){ if(viewing||!redoStack.length) return; undoStack.push(JSON.stringify(S)); S=JSON.parse(redoStack.pop()); cleanup(); saveLS(); renderAll(); }
+
+/* ============ 配置操作 ============ */
+function place(mid,key){
+ if(!isCellIn(S,key)||!memberById(mid)) return;
+ const occ=S.placements[key]; if(occ===mid) return;
+ mutate(()=>{
+  const prev=placementOf(mid);
+  if(prev) delete S.placements[prev];
+  if(occ&&prev) S.placements[prev]=occ;
+  S.placements[key]=mid;
+ });
+}
+function unplace(mid){ const k=placementOf(mid); if(!k) return; mutate(()=>{delete S.placements[k];}); }
+
+/* ============ ダイアログ・トースト ============ */
+function dialog({title,body,buttons}){
+ return new Promise(res=>{
+  const ov=document.createElement('div'); ov.className='ov';
+  const dl=document.createElement('div'); dl.className='dlg'; dl.setAttribute('role','dialog');
+  const h=document.createElement('h3'); h.textContent=title||''; dl.appendChild(h);
+  const b=document.createElement('div');
+  if(typeof body==='string') b.innerHTML=body; else if(body) b.appendChild(body);
+  dl.appendChild(b);
+  const bt=document.createElement('div'); bt.className='dbtn';
+  const done=v=>{ov.remove();document.removeEventListener('keydown',kd,true);res(v);};
+  (buttons||[{t:'OK',v:true,cls:'pri'}]).forEach(x=>{
+   const e=document.createElement('button'); e.textContent=x.t; if(x.cls) e.className=x.cls; e.onclick=()=>done(x.v); bt.appendChild(e);
+  });
+  dl.appendChild(bt); ov.appendChild(dl); document.body.appendChild(ov);
+  const kd=e=>{if(e.key==='Escape'){e.stopPropagation();done(null);}};
+  document.addEventListener('keydown',kd,true);
+  const f=dl.querySelector('input,textarea'); if(f) f.focus();
+ });
+}
+const confirmDlg=(title,msg,ok='OK',danger=false)=>dialog({title,body:'<div>'+msg+'</div>',buttons:[{t:'キャンセル',v:false},{t:ok,v:true,cls:danger?'pri dan':'pri'}]});
+let toastT;
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),3000);}
+
+/* ============ SVG描画 ============ */
+function tw(s){let w=0;for(const ch of s){const c=ch.codePointAt(0);w+=((c>=0x20&&c<=0x7e)||(c>=0xff61&&c<=0xff9f))?0.58:1;}return w;}
+function fit(s,maxW,maxFs,d,twoOK){
+ const ch=Array.from(s); let lines=[s];
+ if(twoOK&&ch.length>2&&tw(s)>2.2){const h=Math.ceil(ch.length/2);lines=[ch.slice(0,h).join(''),ch.slice(h).join('')];}
+ if(lines.length===2) maxFs=Math.min(maxFs,0.42*d);
+ const mw=Math.max(...lines.map(tw),0.5);
+ return {lines,fs:Math.min(maxFs,maxW/mw)};
+}
+function txt(lines,fs,x,y,fg,extra=''){
+ const n=lines.length;
+ return `<text x="${x}" y="${y}" font-size="${fs.toFixed(1)}" fill="${fg}" text-anchor="middle" dominant-baseline="central" font-weight="700" ${extra}>`+
+  lines.map((l,i)=>`<tspan x="${x}" y="${(y+(i-(n-1)/2)*fs*1.1).toFixed(1)}">${esc(l)}</tspan>`).join('')+'</text>';
+}
+function cellLabel(m,x,y,d,fg){
+ const short=shortOf(m); const mode=ui.label;
+ if(mode==='team'){ if(!m.team) return ''; const f=fit(m.team,1.5*d,0.62*d,d,true); return txt(f.lines,f.fs,x,y,fg); }
+ if(mode==='both'&&m.team){
+  const a=fit(short,1.4*d,0.5*d,d,false);
+  let t=Array.from(m.team); if(t.length>4) t=t.slice(0,3).concat('…');
+  const b=fit(t.join(''),0.85*d,0.3*d,d,false);
+  return txt(a.lines,a.fs,x,y-0.2*d,fg)+txt(b.lines,b.fs,x,y+0.5*d,fg,'opacity=".85"');
+ }
+ const f=fit(short,1.5*d,0.62*d,d,true); return txt(f.lines,f.fs,x,y,fg);
+}
+function mapSVG(mirror,o={}){
+ const {rows:R,cols:C}=S.map, d=36, M=84;
+ const dis=new Set(S.map.disabled);
+ const all=allCells().map(x=>({...x,dis:dis.has(x.key)}));
+ const shown=o.cellEdit?all:all.filter(x=>!x.dis);
+ const xmax=(R+C-2)*d, ymin=-(C-1)*d, ymax=(R-1)*d;
+ const vx=-d-M, vw=xmax+2*d+2*M, vy=ymin-d-26, vh=(ymax-ymin)+2*d+60;
+ const X=x=>mirror?xmax-x:x;
+ let out=`<svg class="map" viewBox="${vx} ${vy} ${vw} ${vh}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" data-mirror="${mirror?1:0}">`;
+ if(!shown.length) return out+`<text x="${vx+vw/2}" y="0" text-anchor="middle" font-size="20" fill="#888">有効なマスがありません</text></svg>`;
+ // 列番号
+ if(ui.cols){
+  const kmax=Math.max(...all.map(x=>x.r+x.c)), cols={};
+  shown.filter(x=>!x.dis||o.cellEdit).forEach(x=>{
+   if(x.dis&&!o.cellEdit) return; const k=x.r+x.c; const y=(x.r-x.c)*d;
+   const e=cols[k]||(cols[k]={min:y,max:y}); e.min=Math.min(e.min,y); e.max=Math.max(e.max,y);
+  });
+  for(const k in cols){
+   const n=(kmax-k)/2+1, x=X(k*d);
+   out+=`<text class="lab" x="${x}" y="${cols[k].min-d-6}">${n}</text><text class="lab" x="${x}" y="${cols[k].max+d+17}">${n}</text>`;
+  }
+ }
+ // 前線・本陣
+ const midY=(ymin+ymax)/2, frontX=mirror?vx+M/2:xmax+d+M/2, baseX=mirror?xmax+d+M/2:vx+M/2;
+ out+=`<text class="fr" x="${frontX}" y="${midY-8}" font-size="30">${mirror?'◀':'▶'}</text>`+
+  `<text class="fr" x="${frontX}" y="${midY+20}" font-size="16">前線</text><text class="fr" x="${frontX}" y="${midY+38}" font-size="11">マップ中央</text>`+
+  `<text class="bs" x="${baseX}" y="${midY}" font-size="15">本陣側</text>`;
+ // マス
+ const selKey=(!o.static&&sel)?placementOf(sel):null;
+ for(const cl of shown){
+  const x=X((cl.r+cl.c)*d), y=(cl.r-cl.c)*d, pts=`${x},${y-d} ${x+d},${y} ${x},${y+d} ${x-d},${y}`;
+  const mid=S.placements[cl.key], m=mid&&memberById(mid);
+  let cls='cell', fill='', inner='', tip='';
+  if(cl.dis){cls+=' dis';}
+  else if(m){
+   const col=memberColor(m); cls+=' filled'+(cl.key===selKey?' sel':'');
+   fill=` fill="${col}"`; inner=cellLabel(m,x,y,d,textColor(col));
+   tip=`<title>${esc(m.name)}（チーム: ${esc(m.team||'なし')} / 表示名: ${esc(shortOf(m))}）</title>`;
+  } else cls+=' empty';
+  out+=`<g class="${cls}" data-key="${cl.key}">${tip}<polygon points="${pts}"${fill}/>${inner}</g>`;
+ }
+ return out+'</svg>';
+}
+
+/* ============ 編集画面 ============ */
+function renderAll(){
+ $('#viewBadge').hidden=!viewing;
+ $('#tabs').hidden=viewing;
+ $('#undoBtn').hidden=$('#redoBtn').hidden=$('#newBtn').hidden=viewing;
+ $('#undoBtn').disabled=!undoStack.length; $('#redoBtn').disabled=!redoStack.length;
+ document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
+ $('#editView').hidden=mode!=='edit'||viewing;
+ $('#outView').hidden=!(mode==='out'||viewing);
+ if(mode==='edit'&&!viewing) renderEdit(); else renderOut();
+}
+function setVal(el,v){ if(document.activeElement!==el&&el.value!==v) el.value=v; }
+function renderEdit(){
+ setVal($('#title'),S.title); setVal($('#memo'),S.memo);
+ document.querySelectorAll('#sideSeg button').forEach(b=>b.classList.toggle('on',b.dataset.side===editSide));
+ document.querySelectorAll('#labSeg button').forEach(b=>b.classList.toggle('on',b.dataset.lab===ui.label));
+ $('#colChk').checked=ui.cols;
+ $('#cellEditBtn').classList.toggle('on',cellEdit); $('#cellEditBtn').style.background=cellEdit?'#fff3e0':'';
+ $('#sideHead').textContent=(editSide==='L'?'左陣地の場合':'右陣地の場合')+'（編集中）'+(cellEdit?' ／ マス編集：タップで有効・無効を切替':'');
+ $('#mapHost').innerHTML=mapSVG(editSide==='R',{cellEdit});
+ renderInfo(); renderList();
+}
+function renderInfo(info){
+ const b=$('#infoBar'); const m=sel&&memberById(sel);
+ if(cellEdit){ b.innerHTML='<span class="grow">マス編集中：マスをタップすると有効／無効が切り替わります。</span><button id="cellDone">マス編集を終了</button>'; $('#cellDone').onclick=()=>{cellEdit=false;renderAll();}; return; }
+ if(m){
+  b.innerHTML=`<span class="chip" style="background:${memberColor(m)};color:${textColor(memberColor(m))}">${esc(shortOf(m))}</span>`+
+   `<span class="grow"><b>${esc(m.name)}</b> ／ チーム：${esc(m.team||'なし')} ／ 表示名：${esc(shortOf(m))}<br><small>配置したいマスをタップ</small></span>`+
+   (placementOf(m.id)?'<button id="ibUn">配置から外す</button>':'')+'<button id="ibDs">選択解除</button>';
+  const u=$('#ibUn'); if(u) u.onclick=()=>unplace(m.id);
+  $('#ibDs').onclick=()=>{sel=null;renderAll();};
+ } else b.innerHTML='<span class="grow">メンバー（一覧の行またはマス）をタップして選択 → マスをタップで配置。ドラッグでも移動・入れ替えできます。</span>';
+}
+function renderList(){
+ const cells=validCells().length, placed=Object.keys(S.placements).length;
+ $('#stat').textContent=`配置済 ${placed} / 全 ${S.members.length}名、空きマス ${cells-placed}（マス総数 ${cells}）`;
+ document.querySelectorAll('#filSeg button').forEach(b=>b.classList.toggle('on',b.dataset.fil===ui.filter));
+ $('#sortSel').value=ui.sort; setVal($('#qIn'),ui.q);
+ const to=teamOrder(); const q=ui.q.normalize('NFKC').toLowerCase();
+ let list=S.members.map((m,i)=>({m,i,p:placementOf(m.id)}));
+ if(ui.filter==='un') list=list.filter(x=>!x.p); if(ui.filter==='pl') list=list.filter(x=>x.p);
+ if(q) list=list.filter(x=>(x.m.name+' '+x.m.team+' '+shortOf(x.m)).normalize('NFKC').toLowerCase().includes(q));
+ const tk=x=>x.m.team?to.indexOf(x.m.team):999;
+ if(ui.sort==='team') list.sort((a,b)=>tk(a)-tk(b)||a.i-b.i);
+ else if(ui.sort==='name') list.sort((a,b)=>a.m.name.localeCompare(b.m.name,'ja'));
+ if(ui.filter==='all') list.sort((a,b)=>(a.p?1:0)-(b.p?1:0)); // 未配置を上に（安定ソート）
+ const rows=$('#rows'), sc=rows.scrollTop;
+ rows.innerHTML=list.length?list.map(({m,p})=>{
+  const col=memberColor(m), s=sel===m.id;
+  let h=`<div class="mrow${s?' sel':''}${p?' placed':''}" data-mid="${m.id}"><span class="grip" title="ドラッグして配置">≡</span>`+
+   `<span class="chip" style="background:${col};color:${textColor(col)}">${esc(shortOf(m))}</span>`+
+   `<span class="mname">${esc(m.name)}<small>${esc(m.team)}</small></span><span class="pos">${p?'配置済':'未配置'}</span>`+
+   `<button data-act="edit" title="編集">✎</button></div>`;
+  if(editingId===m.id){
+   h+=`<div class="edrow" data-eid="${m.id}"><label>メンバー名</label><input type="text" data-f="name" value="${esc(m.name)}">`+
+    `<label>チーム</label><input type="text" data-f="team" value="${esc(m.team)}" placeholder="数字・英字・漢字など自由">`+
+    `<label>表示名</label><input type="text" data-f="short" value="${esc(m.short)}" placeholder="${esc(defShort(m.name))}（自動）">`+
+    `<label>カラー</label><div class="cw"><input type="text" data-f="color" value="${esc(m.color)}" placeholder="空欄＝チーム色" style="flex:1"><input type="color" data-f="colorpick" value="${col}"></div>`+
+    `<div class="full">${p?'<button data-act="unplace">配置解除</button>':''}<button data-act="del" class="dan">このメンバーを削除</button><button data-act="close">閉じる</button></div></div>`;
+  }
+  return h;
+ }).join(''):'<div class="stat">該当するメンバーがいません。CSV読込・貼り付け読込・＋1名追加で登録してください。</div>';
+ rows.scrollTop=sc;
+ // チーム一覧
+ $('#teamBox').innerHTML=to.length?to.map(t=>{
+  const n=S.members.filter(m=>m.team===t).length;
+  return `<div class="teamrow" data-team="${esc(t)}"><input type="color" value="${teamColor(t)}"><span class="nm">${esc(t)}</span><small>${n}名</small>`+
+   (S.teamColors[t]?'<button data-act="treset">自動色に戻す</button>':'')+'</div>';
+ }).join(''):'<div class="stat">チームはまだありません。</div>';
+}
+
+/* ============ 出力画面 ============ */
+function renderOut(){
+ document.querySelectorAll('#labSeg2 button').forEach(b=>b.classList.toggle('on',b.dataset.lab===ui.label));
+ $('#colChk2').checked=ui.cols;
+ $('#oTitle').textContent=S.title||'（タイトル未設定）'; $('#oMemo').textContent=S.memo;
+ $('#importBtn').hidden=!viewing;
+ $('#mapL').innerHTML=mapSVG(false,{static:true}); $('#mapR').innerHTML=mapSVG(true,{static:true});
+ const to=teamOrder(); const groups=[];
+ to.concat(['']).forEach(t=>{
+  const ms=S.members.filter(m=>(m.team||'')===t&&placementOf(m.id));
+  if(ms.length) groups.push([t,ms]);
+ });
+ $('#legend').innerHTML=groups.map(([t,ms])=>`<div class="g"><h4><span class="chip" style="background:${teamColor(t)};color:${textColor(teamColor(t))}">${esc(t||'—')}</span>${esc(t||'チームなし')}<small>${ms.length}名</small></h4>`+
+  ms.map(m=>{const c=memberColor(m);return `<div class="it"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>→ ${esc(m.name)}</div>`;}).join('')+'</div>').join('');
+ const un=S.members.filter(m=>!placementOf(m.id));
+ $('#unplacedBox').innerHTML=un.length?`<div class="note" style="font-weight:400">未配置（${un.length}名）：${un.map(m=>esc(m.name)+(m.team?'（'+esc(m.team)+'）':'')).join('、')}</div>`:'';
+}
+
+/* ============ 共有URL ============ */
+function b64e(s){return btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+function b64d(s){s=s.replace(/-/g,'+').replace(/_/g,'/');while(s.length%4)s+='=';return decodeURIComponent(escape(atob(s)));}
+function encodeState(){
+ const idx={}; S.members.forEach((m,i)=>idx[m.id]=i);
+ const a=[1,S.title,S.memo,[S.map.rows,S.map.cols,S.map.parity,S.map.disabled],
+  S.members.map(m=>[m.name,m.team,m.short,m.color]),Object.entries(S.teamColors),
+  Object.entries(S.placements).map(([k,id])=>{const [r,c]=k.split(',');return [+r,+c,idx[id]];})];
+ const j=JSON.stringify(a);
+ return (window.LZString?'1.'+LZString.compressToEncodedURIComponent(j):'0.'+b64e(j));
+}
+function decodeState(str){
+ const t=str.slice(0,2), body=str.slice(2);
+ let j; if(t==='1.'){ if(!window.LZString) throw new Error('lz'); j=LZString.decompressFromEncodedURIComponent(body); } else if(t==='0.') j=b64d(body); else throw new Error('fmt');
+ const a=JSON.parse(j); if(!Array.isArray(a)) throw new Error('bad');
+ const members=a[4].map((x,i)=>({id:'m'+i,name:x[0],team:x[1],short:x[2],color:x[3]}));
+ const tc={}; (a[5]||[]).forEach(([k,v])=>tc[k]=v);
+ const pl={}; (a[6]||[]).forEach(([r,c,i])=>{if(members[i]) pl[r+','+c]=members[i].id;});
+ const st=sanitize({title:a[1],memo:a[2],map:{rows:a[3][0],cols:a[3][1],parity:a[3][2],disabled:a[3][3]},members,teamColors:tc,placements:pl});
+ return st;
+}
+async function makeShare(){
+ const enc=encodeState();
+ const url=location.origin.replace('null','file://')+location.pathname+'#d='+enc;
+ const box=$('#shareBox'); box.hidden=false;
+ box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div><textarea class="urlbox" rows="3" readonly></textarea>`;
+ const ta=box.querySelector('textarea'); ta.value=url;
+ let ok=false; try{await navigator.clipboard.writeText(url);ok=true;}catch(e){}
+ if(!ok){ ta.focus(); ta.select(); try{ok=document.execCommand('copy');}catch(e){} }
+ toast(ok?'共有URLをコピーしました':'コピーできませんでした。URLを選択して手動でコピーしてください');
+}
+
+/* ============ CSV ============ */
+function parseTable(text){
+ text=text.replace(/^﻿/,'').replace(/\r\n?/g,'\n');
+ const delim=text.includes('\t')?'\t':',';
+ const rows=[]; let row=[],cur='',q=false;
+ for(let i=0;i<text.length;i++){
+  const ch=text[i];
+  if(q){ if(ch==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+  else if(ch==='"'&&cur==='') q=true;
+  else if(ch===delim){row.push(cur);cur='';}
+  else if(ch==='\n'){row.push(cur);rows.push(row);row=[];cur='';}
+  else cur+=ch;
+ }
+ row.push(cur); rows.push(row);
+ return rows.filter(r=>r.some(c=>c.trim()!==''));
+}
+function readEntries(text){
+ const rows=parseTable(text); if(!rows.length) return {entries:[],dups:0};
+ const RE={name:/^(メンバー名?|名前|氏名|name|ゲーム内名)$/i,team:/^(チーム|team|班)$/i,short:/^表示名?$/,color:/^(表示カラー|カラー|色|color)$/i,place:/^配置$/};
+ const head=rows[0].map(c=>c.trim());
+ const isHead=head.some(c=>Object.values(RE).some(re=>re.test(c)));
+ let ix={name:0,team:1,short:2,color:3,place:4};
+ if(isHead){ ix={name:0}; for(const k in RE){const i=head.findIndex(c=>RE[k].test(c)); if(i>=0) ix[k]=i;} rows.shift(); }
+ const map=new Map(); let dups=0;
+ for(const r of rows){
+  const name=normName(r[ix.name]); if(!name) continue;
+  const g=k=>ix[k]===undefined?undefined:(r[ix[k]]||'').trim();
+  const e={name,team:normTeam(g('team')),short:g('short')||'',color:g('color')||'',place:g('place')||''};
+  if(map.has(name)) dups++;
+  map.set(name,e);
+ }
+ return {entries:[...map.values()],dups};
+}
+async function importText(text){
+ const {entries,dups}=readEntries(text);
+ if(!entries.length){toast('読み込めるメンバーがありませんでした');return;}
+ let modeSel='replace';
+ if(S.members.length){
+  const names=new Set(entries.map(e=>e.name));
+  const lost=S.members.filter(m=>!names.has(m.name)&&placementOf(m.id)).length;
+  const r=await dialog({title:'メンバー表の再読込',body:`<div>現在 ${S.members.length}名が登録されています。読み込み ${entries.length}名。</div><div class="stat">追加・更新：同名は属性を上書き（配置は維持）、新規は追加。<br>置き換え：表を入れ替え。新しい表に無いメンバーの配置は解除されます（<b>${lost}名</b>）。</div>`,
+   buttons:[{t:'キャンセル',v:null},{t:'追加・更新',v:'merge',cls:'pri'},{t:`置き換え（${lost}名解除）`,v:'replace',cls:'pri dan'}]});
+  if(!r) return; modeSel=r;
+ }
+ mutate(()=>{
+  const by=new Map(S.members.map(m=>[m.name,m]));
+  if(modeSel==='replace'){ const names=new Set(entries.map(e=>e.name)); S.members=S.members.filter(m=>names.has(m.name)); }
+  const order=[];
+  for(const e of entries){
+   let m=by.get(e.name);
+   if(!m||!S.members.includes(m)){ m={id:newId(),name:e.name,team:'',short:'',color:''}; S.members.push(m); }
+   if(modeSel==='replace'||e.team||!m.team) m.team=e.team;
+   if(modeSel==='replace'||e.short) m.short=e.short;
+   if(modeSel==='replace'||e.color) m.color=e.color;
+   order.push([m,e]);
+  }
+  if(modeSel==='replace'){ const rank=new Map(entries.map((e,i)=>[e.name,i])); S.members.sort((a,b)=>rank.get(a.name)-rank.get(b.name)); }
+  for(const [m,e] of order){
+   const mm=/^(\d+)\s*[,，]\s*(\d+)$/.exec(e.place); if(!mm) continue;
+   const key=+mm[1]+','+ +mm[2]; if(!isCellIn(S,key)) continue;
+   const prev=placementOf(m.id); if(prev) delete S.placements[prev];
+   S.placements[key]=m.id;
+  }
+ });
+ toast(`${entries.length}名を読み込みました`+(dups?`（重複${dups}件を統合）`:''));
+}
+function exportCSV(){
+ const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
+ const lines=['メンバー名,チーム,表示名,カラー,配置'].concat(S.members.map(m=>[q(m.name),q(m.team),q(m.short),q(m.color),q(placementOf(m.id)||'')].join(',')));
+ const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='三方配置図_メンバー表.csv'; document.body.appendChild(a); a.click();
+ setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
+}
+async function readFile(f){
+ const buf=await f.arrayBuffer(); let t;
+ try{t=new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){t=new TextDecoder('shift_jis').decode(buf);}
+ importText(t);
+}
+
+/* ============ マップ設定 ============ */
+async function openMapCfg(){
+ const m=S.map, el=document.createElement('div');
+ el.innerHTML=`<div class="f"><label>段数（r）</label><input type="number" id="cfR" min="4" max="20" value="${m.rows}"></div>`+
+  `<div class="f"><label>列数（c）</label><input type="number" id="cfC" min="4" max="20" value="${m.cols}"></div>`+
+  `<div class="f"><label>マス条件</label><select id="cfP"><option value="0">(r+c) が偶数</option><option value="1">(r+c) が奇数</option></select></div>`+
+  `<div class="stat">個別のマスの有効／無効は「マス編集」で切り替えます。</div><button id="cfReset">デフォルト（50マス）に戻す</button>`;
+ el.querySelector('#cfP').value=m.parity;
+ el.querySelector('#cfReset').onclick=()=>{el.querySelector('#cfR').value=10;el.querySelector('#cfC').value=10;el.querySelector('#cfP').value=0;el._reset=true;};
+ const r=await dialog({title:'マップ設定',body:el,buttons:[{t:'キャンセル',v:false},{t:'適用',v:true,cls:'pri'}]});
+ if(!r) return;
+ const nm={rows:clamp(parseInt(el.querySelector('#cfR').value)||10,4,20),cols:clamp(parseInt(el.querySelector('#cfC').value)||10,4,20),parity:+el.querySelector('#cfP').value===1?1:0,disabled:el._reset?[]:m.disabled.slice()};
+ const test={map:nm}; nm.disabled=nm.disabled.filter(k=>{const [a,b]=k.split(',').map(Number);return a<nm.rows&&b<nm.cols&&(a+b)%2===nm.parity;});
+ const lost=Object.keys(S.placements).filter(k=>!isCellIn({map:nm},k)).length;
+ if(lost&&!await confirmDlg('配置の解除','形状の変更でなくなるマスに配置済みの <b>'+lost+'名</b> が未配置に戻ります。よろしいですか？','変更する',true)) return;
+ mutate(()=>{S.map=nm;});
+}
+
+/* ============ ポインタ操作（ドラッグ／タップ） ============ */
+let drag=null;
+function startGhost(){
+ const m=memberById(drag.mid); if(!m) return;
+ const g=document.createElement('div'); g.className='ghost'; const c=memberColor(m);
+ g.innerHTML=`<span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>`;
+ document.body.appendChild(g); drag.ghost=g; drag.active=true; moveGhost(drag.x,drag.y);
+}
+function moveGhost(x,y){ if(drag.ghost){drag.ghost.style.left=x+'px';drag.ghost.style.top=y+'px';} }
+function cellAt(x,y){ const e=document.elementFromPoint(x,y); return e&&e.closest?e.closest('#mapHost [data-key]'):null; }
+function clearDrop(){document.querySelectorAll('#mapHost .drop').forEach(e=>e.classList.remove('drop'));}
+function endDrag(){ if(!drag) return; clearTimeout(drag.timer); if(drag.ghost) drag.ghost.remove(); clearDrop(); drag=null; }
+
+document.addEventListener('pointerdown',e=>{
+ if(viewing||mode!=='edit'||(e.pointerType==='mouse'&&e.button!==0)) return;
+ if(e.target.closest('input,button,select,textarea,.edrow')) return;
+ if(drag) endDrag();
+ const cell=e.target.closest('#mapHost [data-key]'), row=e.target.closest('.mrow');
+ let d=null;
+ if(cell){ const key=cell.dataset.key; d={kind:'cell',key,mid:S.placements[key]||null}; }
+ else if(row) d={kind:'row',mid:row.dataset.mid,grip:!!e.target.closest('.grip')};
+ else if(e.target.closest('#mapHost')) d={kind:'blank'};
+ else return;
+ d.id=e.pointerId; d.sx=d.x=e.clientX; d.sy=d.y=e.clientY; d.touch=e.pointerType!=='mouse'; d.active=false;
+ if(d.kind==='row'&&d.touch&&!d.grip) d.timer=setTimeout(()=>{ if(drag===d&&!d.active) startGhost(); },380);
+ drag=d;
+});
+document.addEventListener('pointermove',e=>{
+ if(!drag||e.pointerId!==drag.id) return;
+ drag.x=e.clientX; drag.y=e.clientY;
+ const dist=Math.hypot(drag.x-drag.sx,drag.y-drag.sy);
+ if(!drag.active){
+  if(drag.kind==='blank'||cellEdit||(drag.kind==='cell'&&!drag.mid)){ if(dist>8) drag.tapCancel=true; return; }
+  if(drag.kind==='row'&&drag.touch&&!drag.grip){ if(dist>8){clearTimeout(drag.timer);drag.tapCancel=true;} return; }
+  if(dist>5) startGhost();
+  return;
+ }
+ moveGhost(drag.x,drag.y);
+ clearDrop(); const c=cellAt(drag.x,drag.y); if(c) c.classList.add('drop');
+});
+document.addEventListener('touchmove',e=>{ if(drag&&drag.active&&e.cancelable) e.preventDefault(); },{passive:false});
+document.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.id) endDrag(); });
+document.addEventListener('pointerup',e=>{
+ if(!drag||e.pointerId!==drag.id) return;
+ const d=drag; const wasActive=d.active; d.x=e.clientX; d.y=e.clientY;
+ if(wasActive){
+  if(d.ghost) d.ghost.style.display='none';
+  const c=cellAt(d.x,d.y); const el=document.elementFromPoint(d.x,d.y);
+  endDrag();
+  if(c) place(d.mid,c.dataset.key);
+  else if(d.kind==='cell'&&el&&el.closest('#listPane')) unplace(d.mid);
+  return;
+ }
+ endDrag();
+ if(d.tapCancel) return;
+ tap(d);
+});
+function tap(d){
+ if(d.kind==='blank'){ if(sel){sel=null;renderAll();} return; }
+ if(d.kind==='row'){ sel=(sel===d.mid)?null:d.mid; renderAll(); return; }
+ // cell
+ if(cellEdit){
+  mutate(()=>{ const i=S.map.disabled.indexOf(d.key); if(i>=0) S.map.disabled.splice(i,1); else S.map.disabled.push(d.key); });
+  return;
+ }
+ if(sel){
+  if(S.placements[d.key]===sel){ sel=null; renderAll(); return; }
+  const id=sel; sel=null; place(id,d.key); return;
+ }
+ if(d.mid){ sel=d.mid; renderAll(); }
+}
+document.addEventListener('keydown',e=>{
+ const inField=/^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName||''));
+ if(e.key==='Escape'&&sel&&!document.querySelector('.ov')){sel=null;renderAll();}
+ if(inField||document.querySelector('.ov')) return;
+ if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}
+ else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'){e.preventDefault();redo();}
+});
+
+/* ============ 閲覧モードの吹き出し ============ */
+let bubble;
+document.addEventListener('click',e=>{
+ if(bubble){bubble.remove();bubble=null;}
+ if($('#outView').hidden) return;
+ const c=e.target.closest('#outView [data-key]'); if(!c) return;
+ const m=memberById(S.placements[c.dataset.key]); if(!m) return;
+ bubble=document.createElement('div'); bubble.className='bubble';
+ bubble.innerHTML=`<b>${esc(m.name)}</b><br>チーム：${esc(m.team||'なし')} ／ 表示名：${esc(shortOf(m))}`;
+ bubble.style.left=e.clientX+'px'; bubble.style.top=e.clientY+'px'; document.body.appendChild(bubble);
+ const b=bubble; setTimeout(()=>{if(bubble===b){b.remove();bubble=null;}},3500);
+});
+
+/* ============ 各種UIイベント ============ */
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;renderAll();});
+document.querySelectorAll('#sideSeg button').forEach(b=>b.onclick=()=>{editSide=b.dataset.side;renderAll();});
+document.querySelectorAll('#labSeg button,#labSeg2 button').forEach(b=>b.onclick=()=>{ui.label=b.dataset.lab;saveUI();renderAll();});
+$('#colChk').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
+$('#colChk2').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
+document.querySelectorAll('#filSeg button').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.fil;saveUI();renderList();});
+$('#sortSel').onchange=e=>{ui.sort=e.target.value;saveUI();renderList();};
+$('#qIn').oninput=e=>{ui.q=e.target.value;renderList();};
+$('#title').onchange=e=>{const v=e.target.value;if(v!==S.title) mutate(()=>{S.title=v;});};
+$('#memo').onchange=e=>{const v=e.target.value;if(v!==S.memo) mutate(()=>{S.memo=v;});};
+$('#undoBtn').onclick=undo; $('#redoBtn').onclick=redo;
+$('#mapCfgBtn').onclick=openMapCfg;
+$('#cellEditBtn').onclick=()=>{cellEdit=!cellEdit;sel=null;renderAll();};
+$('#clearBtn').onclick=async()=>{ if(!Object.keys(S.placements).length){toast('配置されているメンバーはいません');return;}
+ if(await confirmDlg('全配置クリア','配置をすべて解除します（メンバー表は残ります）。','クリアする',true)) mutate(()=>{S.placements={};}); };
+$('#newBtn').onclick=async()=>{ if(await confirmDlg('新しい配置図','編集中のデータ（メンバー表・配置・設定）をすべて初期化します。','初期化する',true)){ snap(); S=defaultState(); sel=null;editingId=null;cellEdit=false; saveLS(); renderAll(); } };
+$('#fileBtn').onclick=()=>$('#fileIn').click();
+$('#fileIn').onchange=e=>{const f=e.target.files[0]; if(f) readFile(f); e.target.value='';};
+$('#pasteBtn').onclick=async()=>{
+ const ta=document.createElement('textarea'); ta.rows=9; ta.placeholder='スプレッドシートからコピーした表（タブ区切り）、CSV、または名前だけを1行1名で貼り付け\n列順：メンバー名, チーム, 表示名, カラー';
+ const b=document.createElement('div'); b.innerHTML='<div class="stat">見出し行は自動で判定します。チームは数字・英字・漢字など何でも使えます。</div>'; b.appendChild(ta);
+ const r=await dialog({title:'貼り付け読込',body:b,buttons:[{t:'キャンセル',v:false},{t:'読込',v:true,cls:'pri'}]});
+ if(r&&ta.value.trim()) importText(ta.value);
+};
+$('#csvOutBtn').onclick=exportCSV;
+$('#addBtn').onclick=()=>{
+ let n=1; while(S.members.some(m=>m.name==='新規'+n)) n++;
+ const id=newId(); mutate(()=>{S.members.push({id,name:'新規'+n,team:'',short:'',color:''});});
+ editingId=id; ui.filter='all'; ui.q=''; renderAll();
+ setTimeout(()=>{const i=document.querySelector(`[data-eid="${id}"] input`); if(i){i.scrollIntoView({block:'nearest'});i.select();}},30);
+};
+$('#rows').addEventListener('click',e=>{
+ const btn=e.target.closest('[data-act]'); if(!btn) return;
+ const row=btn.closest('[data-mid]'), ed=btn.closest('[data-eid]'); const id=row?row.dataset.mid:ed.dataset.eid;
+ const act=btn.dataset.act;
+ if(act==='edit'){editingId=editingId===id?null:id;renderList();}
+ else if(act==='close'){editingId=null;renderList();}
+ else if(act==='unplace') unplace(id);
+ else if(act==='del') confirmDlg('メンバー削除','このメンバーを削除します（配置も解除されます）。','削除する',true).then(ok=>{ if(ok) mutate(()=>{S.members=S.members.filter(m=>m.id!==id);}); });
+});
+$('#rows').addEventListener('change',e=>{
+ const f=e.target.dataset.f; if(!f) return;
+ const id=e.target.closest('[data-eid]').dataset.eid, m=memberById(id); if(!m) return;
+ let v=e.target.value;
+ if(f==='name'){ v=normName(v); if(!v||S.members.some(x=>x.id!==id&&x.name===v)){toast(v?'同じ名前のメンバーがいます':'名前は必須です');renderList();return;} mutate(()=>{m.name=v;}); }
+ else if(f==='team'){ v=normTeam(v); mutate(()=>{m.team=v;}); }
+ else if(f==='short'){ mutate(()=>{m.short=v.trim();}); }
+ else if(f==='color'){ v=v.trim(); if(v&&!toHex(v)){toast('色を認識できません（例：#ff8800、orange）');renderList();return;} mutate(()=>{m.color=v;}); }
+ else if(f==='colorpick'){ mutate(()=>{m.color=v;}); }
+});
+$('#teamBox').addEventListener('change',e=>{
+ if(e.target.type!=='color') return; const t=e.target.closest('[data-team]').dataset.team; mutate(()=>{S.teamColors[t]=e.target.value;});
+});
+$('#teamBox').addEventListener('click',e=>{
+ const b=e.target.closest('[data-act="treset"]'); if(!b) return; const t=b.closest('[data-team]').dataset.team; mutate(()=>{delete S.teamColors[t];});
+});
+$('#shareBtn').onclick=makeShare;
+$('#importBtn').onclick=async()=>{
+ if(!await confirmDlg('編集に取り込む','この共有データで、あなたの編集データを置き換えます。','取り込む',true)) return;
+ const keep=S; viewing=false; S=keep; undoStack=[];redoStack=[]; saveLS(); sel=null; mode='edit';
+ history.replaceState(null,'',location.pathname+location.search); renderAll();
+};
+window.addEventListener('hashchange',()=>location.reload());
+
+/* ============ 起動 ============ */
+(function init(){
+ const m=/^#d=(.+)$/.exec(location.hash);
+ if(m){
+  viewing=true; mode='out';
+  try{ S=decodeState(m[1]); }
+  catch(err){
+   S=defaultState();
+   document.body.innerHTML='<main style="max-width:560px"><div class="card"><h2>URLが壊れています</h2><p>共有URLを読み込めませんでした。URLが途中で切れていないか確認してください。</p><p><a href="'+esc(location.pathname)+'">編集画面を開く</a></p></div></main>';
+   return;
+  }
+ } else loadLS();
+ renderAll();
+})();
+</script>
+</body>
+</html>
