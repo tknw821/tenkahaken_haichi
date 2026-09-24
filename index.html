@@ -47,12 +47,11 @@ svg.map text{pointer-events:none;font-family:inherit}
 svg.map .cell polygon{stroke-linejoin:round}
 svg.map .cell.empty polygon{fill:#eef0f4;stroke:#c8cdd6;stroke-width:1.5}
 svg.map .cell.filled polygon{stroke:#fff;stroke-width:1.5}
-svg.map .cell.dis polygon{fill:#fafafa;stroke:#aaa;stroke-width:1.5;stroke-dasharray:4 3}
 svg.map .cell.sel polygon{stroke:#ff6d00;stroke-width:5;animation:blink 1s infinite}
 svg.map .cell.drop polygon{stroke:#1976d2;stroke-width:5}
 svg.map .cell.hl polygon{stroke:#ff6d00;stroke-width:4}
 @keyframes blink{50%{stroke-opacity:.35}}
-.lab{fill:#444;font-size:16px;font-weight:700;text-anchor:middle}
+.lab{fill:#444;font-weight:700;text-anchor:middle}
 .fr{fill:#c62828;text-anchor:middle;font-weight:700}
 .bs{fill:#6b7280;text-anchor:middle;font-weight:600}
 #infoBar{margin-top:8px;padding:8px 10px;border-radius:8px;background:#f0f4ff;border:1px solid #cfdcff;min-height:38px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
@@ -104,6 +103,7 @@ details.card>summary{cursor:pointer;font-weight:600}
 .menu button:hover{background:#f0f2f5}
 .bulkbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fff4e8;border:1px solid #ffcc80;border-radius:8px;padding:6px 8px;margin:6px 0}
 .teamrow .swatchbar{flex-basis:100%;margin:2px 0 4px}
+.teamrow .hsv{flex-basis:100%}
 .mrow .bsel{margin-right:2px}
 .rangewrap{display:inline-flex;align-items:center;gap:6px;font-size:13px}
 .rangewrap input[type=range]{width:100px}
@@ -112,6 +112,23 @@ details.card>summary{cursor:pointer;font-weight:600}
 .listToggleBtn{display:none}
 #listPreview{display:none}
 .hint{color:var(--sub);font-size:12px}
+.previewchip{border:2px solid transparent;cursor:pointer}
+.previewchip.placed{opacity:.55}
+.previewchip.sel{border-color:#ff6d00;opacity:1}
+.hsv{margin-top:6px}
+.hsv summary{cursor:pointer;font-size:12px;color:var(--pri)}
+.hsvbox{margin-top:6px}
+.hsvrow{display:flex;align-items:center;gap:8px;margin:5px 0}
+.hsvrow .hsvlab{width:32px;font-size:12px;color:var(--sub)}
+.hsvrow input[type=range]{flex:1;height:22px}
+.hsvrow input.hsvH{background:linear-gradient(to right,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);border-radius:4px;-webkit-appearance:none;appearance:none}
+.hsvrow input.hsvS{border-radius:4px;-webkit-appearance:none;appearance:none}
+.hsvrow input.hsvV{border-radius:4px;-webkit-appearance:none;appearance:none}
+.hsvval{width:30px;text-align:right;font-size:12px;color:var(--sub);font-variant-numeric:tabular-nums}
+.hsvpreview{width:100%;height:26px;border-radius:6px;border:1px solid var(--line);margin-top:4px}
+.qrhint{color:var(--sub);font-size:12px;margin-top:6px}
+.cplist{max-height:50vh;overflow:auto;margin-top:6px}
+.cplist .mrow{cursor:pointer}
 @media(max-width:900px){
  .layout{grid-template-columns:1fr}
  #mapPane{grid-column:1;grid-row:1}
@@ -152,7 +169,6 @@ details.card>summary{cursor:pointer;font-weight:600}
    </div>
    <div class="toolbar">
     <button id="mapCfgBtn">マップ設定</button>
-    <button id="cellEditBtn">マス編集</button>
     <button id="clearBtn" class="dan">全配置クリア</button>
    </div>
    <div id="mapSticky">
@@ -232,6 +248,7 @@ details.card>summary{cursor:pointer;font-weight:600}
 <div id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 "use strict";
 /* ============ 基本 ============ */
@@ -244,7 +261,7 @@ const GRAY='#9aa0a6';
 
 const defaultState=()=>({v:1,title:'',memo:'',map:{rows:10,cols:10,parity:0,disabled:[]},members:[],teamColors:{},placements:{}});
 let S=defaultState();
-let mode='edit', viewing=false, editSide='L', sel=null, cellEdit=false, editingId=null;
+let mode='edit', viewing=false, editSide='L', sel=null, editingId=null;
 let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:true};
 let undoStack=[], redoStack=[], idSeq=0;
 let bulkMode=false, bulkSel=new Set();
@@ -328,6 +345,47 @@ function paletteColors(){ return PAL5.concat(ui.customColors); }
 function swatchBar(cur,name){
  const c=toHex(cur);
  return `<div class="swatchbar" data-swatch="${name}">`+paletteColors().map(h=>`<button type="button" class="swatch${h===c?' on':''}" data-color="${h}" style="background:${h}" title="${h}"></button>`).join('')+'</div>';
+}
+function hsv2hex(h,s,v){
+ s/=100; v/=100;
+ const k=n=>(n+h/60)%6;
+ const f=n=>v-v*s*Math.max(0,Math.min(k(n),4-k(n),1));
+ const r=Math.round(f(5)*255),g=Math.round(f(3)*255),b=Math.round(f(1)*255);
+ return '#'+[r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function hex2hsv(hex){
+ hex=toHex(hex)||'#ff0000';
+ const n=parseInt(hex.slice(1),16), r=(n>>16)/255, g=((n>>8)&255)/255, b=(n&255)/255;
+ const max=Math.max(r,g,b), min=Math.min(r,g,b), d=max-min;
+ let h=0;
+ if(d!==0){
+  if(max===r) h=60*(((g-b)/d)%6);
+  else if(max===g) h=60*((b-r)/d+2);
+  else h=60*((r-g)/d+4);
+ }
+ if(h<0) h+=360;
+ const s=max===0?0:d/max;
+ return {h:Math.round(h),s:Math.round(s*100),v:Math.round(max*100)};
+}
+function hsvBox(hex){
+ const {h,s,v}=hex2hsv(hex);
+ return `<details class="hsv"><summary>カスタムカラー（色相・彩度・明度で指定）</summary><div class="hsvbox">`+
+  `<div class="hsvrow"><span class="hsvlab">色相</span><input type="range" class="hsvH" min="0" max="360" value="${h}"><span class="hsvval">${h}</span></div>`+
+  `<div class="hsvrow"><span class="hsvlab">彩度</span><input type="range" class="hsvS" min="0" max="100" value="${s}"><span class="hsvval">${s}</span></div>`+
+  `<div class="hsvrow"><span class="hsvlab">明度</span><input type="range" class="hsvV" min="0" max="100" value="${v}"><span class="hsvval">${v}</span></div>`+
+  `<div class="hsvpreview" style="background:${hex}"></div>`+
+  `</div></details>`;
+}
+function readHsvBox(root){
+ const h=+root.querySelector('.hsvH').value, s=+root.querySelector('.hsvS').value, v=+root.querySelector('.hsvV').value;
+ return hsv2hex(h,s,v);
+}
+function updateHsvBoxUI(root){
+ const h=+root.querySelector('.hsvH').value, s=+root.querySelector('.hsvS').value, v=+root.querySelector('.hsvV').value;
+ root.querySelectorAll('.hsvrow').forEach(row=>{ row.querySelector('.hsvval').textContent=row.querySelector('input').value; });
+ root.querySelector('.hsvS').style.background=`linear-gradient(to right,#fff,${hsv2hex(h,100,v||100)})`;
+ root.querySelector('.hsvV').style.background=`linear-gradient(to right,#000,${hsv2hex(h,s,100)})`;
+ const pv=root.querySelector('.hsvpreview'); if(pv) pv.style.background=hsv2hex(h,s,v);
 }
 function teamOrder(){const a=[];S.members.forEach(m=>{if(m.team&&!a.includes(m.team)) a.push(m.team);});return a;}
 function memberColor(m){
@@ -426,9 +484,9 @@ function cellLabel(m,x,y,d,fg){
 function mapSVG(mirror,o={}){
  const {rows:R,cols:C}=S.map, d=36, M=84;
  _fs=ui.fontScale||1;
- const dis=new Set(S.map.disabled);
- const all=allCells().map(x=>({...x,dis:dis.has(x.key)}));
- const shown=o.cellEdit?all:all.filter(x=>!x.dis);
+ const disSet=new Set(S.map.disabled);
+ const all=allCells();
+ const shown=all.filter(x=>!disSet.has(x.key));
  const xmax=(R+C-2)*d, ymin=-(C-1)*d, ymax=(R-1)*d;
  const vx=-d-M, vw=xmax+2*d+2*M, vy=ymin-d-26, vh=(ymax-ymin)+2*d+60;
  const X=x=>mirror?xmax-x:x;
@@ -437,8 +495,8 @@ function mapSVG(mirror,o={}){
  // 列番号
  if(ui.cols){
   const kmax=Math.max(...all.map(x=>x.r+x.c)), cols={};
-  shown.filter(x=>!x.dis||o.cellEdit).forEach(x=>{
-   if(x.dis&&!o.cellEdit) return; const k=x.r+x.c; const y=(x.r-x.c)*d;
+  shown.forEach(x=>{
+   const k=x.r+x.c, y=(x.r-x.c)*d;
    const e=cols[k]||(cols[k]={min:y,max:y}); e.min=Math.min(e.min,y); e.max=Math.max(e.max,y);
   });
   const labFs=(16*_fs).toFixed(1);
@@ -458,8 +516,7 @@ function mapSVG(mirror,o={}){
   const x=X((cl.r+cl.c)*d), y=(cl.r-cl.c)*d, pts=`${x},${y-d} ${x+d},${y} ${x},${y+d} ${x-d},${y}`;
   const mid=S.placements[cl.key], m=mid&&memberById(mid);
   let cls='cell', fill='', inner='', tip='';
-  if(cl.dis){cls+=' dis';}
-  else if(m){
+  if(m){
    const col=memberColor(m); cls+=' filled'+(cl.key===selKey?' sel':'');
    fill=` fill="${col}"`; inner=cellLabel(m,x,y,d,textColor(col));
    tip=`<title>${esc(m.name)}（チーム: ${esc(m.team||'なし')} / 表示名: ${esc(shortOf(m))}）</title>`;
@@ -488,21 +545,19 @@ function renderEdit(){
  document.querySelectorAll('#labSeg button').forEach(b=>b.classList.toggle('on',b.dataset.lab===ui.label));
  $('#colChk').checked=ui.cols;
  setRange($('#fsRange'),ui.fontScale);
- $('#cellEditBtn').classList.toggle('on',cellEdit); $('#cellEditBtn').style.background=cellEdit?'#fff3e0':'';
- $('#sideHead').textContent=(editSide==='L'?'左陣地の場合':'右陣地の場合')+'（編集中）'+(cellEdit?' ／ マス編集：タップで有効・無効を切替':'');
- $('#mapHost').innerHTML=mapSVG(editSide==='R',{cellEdit});
+ $('#sideHead').textContent=(editSide==='L'?'左陣地の場合':'右陣地の場合')+'（編集中）';
+ $('#mapHost').innerHTML=mapSVG(editSide==='R');
  renderInfo(); renderList();
 }
 function renderInfo(info){
  const b=$('#infoBar'); const m=sel&&memberById(sel);
- if(cellEdit){ b.innerHTML='<span class="grow">マス編集中：マスをタップすると有効／無効が切り替わります。</span><button id="cellDone">マス編集を終了</button>'; $('#cellDone').onclick=()=>{cellEdit=false;renderAll();}; return; }
  if(m){
   b.innerHTML=`<span class="chip" style="background:${memberColor(m)};color:${textColor(memberColor(m))}">${esc(shortOf(m))}</span>`+
    `<span class="grow"><b>${esc(m.name)}</b> ／ チーム：${esc(m.team||'なし')} ／ 表示名：${esc(shortOf(m))}<br><small>配置したいマスをタップ</small></span>`+
    (placementOf(m.id)?'<button id="ibUn">配置から外す</button>':'')+'<button id="ibDs">選択解除</button>';
   const u=$('#ibUn'); if(u) u.onclick=()=>unplace(m.id);
   $('#ibDs').onclick=()=>{sel=null;renderAll();};
- } else b.innerHTML='<span class="grow">メンバー（一覧の行またはマス）をタップして選択 → マスをタップで配置。ドラッグでも移動・入れ替えできます。</span>';
+ } else b.innerHTML='<span class="grow">メンバー（一覧の行またはマス）をタップして選択 → マスをタップで配置。空きマスを直接タップして未配置メンバーから選ぶこともできます。ドラッグでも移動・入れ替えできます。</span>';
 }
 function renderList(){
  const cells=validCells().length, placed=Object.keys(S.placements).length;
@@ -511,7 +566,10 @@ function renderList(){
  $('#sortSel').value=ui.sort; setVal($('#qIn'),ui.q);
  $('#listPane').classList.toggle('collapsed',ui.listCollapsed);
  $('#listToggle').textContent=ui.listCollapsed?'▼ ひろげる':'▲ たたむ';
- $('#listPreview').innerHTML=S.members.map(m=>{const c=memberColor(m);return `<span class="chip" style="background:${c};color:${textColor(c)}" title="${esc(m.name)}">${esc(shortOf(m))}</span>`;}).join('')||'<span class="hint">メンバー未登録</span>';
+ $('#listPreview').innerHTML=S.members.length?S.members.map(m=>{
+  const c=memberColor(m), p=!!placementOf(m.id), isSel=sel===m.id;
+  return `<button type="button" class="chip previewchip${p?' placed':''}${isSel?' sel':''}" data-mid="${m.id}" style="background:${c};color:${textColor(c)}" title="${esc(m.name)}${p?'（配置済）':'（未配置）'}">${esc(shortOf(m))}</button>`;
+ }).join(''):'<span class="hint">メンバー未登録</span>';
  $('#bulkModeBtn').classList.toggle('on',bulkMode);
  $('#bulkModeBtn').textContent=bulkMode?'一括選択を終了':'一括選択';
  $('#bulkBar').hidden=!bulkMode;
@@ -538,6 +596,7 @@ function renderList(){
     `<label>表示名</label><input type="text" data-f="short" value="${esc(m.short)}" placeholder="${esc(defShort(m.name))}（自動）">`+
     `<label>カラー</label><div class="cw"><input type="text" data-f="color" value="${esc(m.color)}" placeholder="空欄＝チーム色" style="flex:1"><input type="color" data-f="colorpick" value="${col}"></div>`+
     `<div class="full">${swatchBar(col,'m:'+m.id)}</div>`+
+    `<div class="full">${hsvBox(col)}</div>`+
     `<div class="full">${p?'<button data-act="unplace">配置解除</button>':''}<button data-act="del" class="dan">このメンバーを削除</button><button data-act="close">閉じる</button></div></div>`;
   }
   return h;
@@ -547,8 +606,9 @@ function renderList(){
  $('#teamBox').innerHTML=to.length?to.map(t=>{
   const n=S.members.filter(m=>m.team===t).length;
   return `<div class="teamrow" data-team="${esc(t)}"><input type="color" value="${teamColor(t)}"><span class="nm">${esc(t)}</span><small>${n}名</small>`+
-   (S.teamColors[t]?'<button data-act="treset">自動色に戻す</button>':'')+swatchBar(teamColor(t),'t:'+t)+'</div>';
+   (S.teamColors[t]?'<button data-act="treset">自動色に戻す</button>':'')+swatchBar(teamColor(t),'t:'+t)+hsvBox(teamColor(t))+'</div>';
  }).join(''):'<div class="stat">チームはまだありません。</div>';
+ document.querySelectorAll('#rows .hsvbox,#teamBox .hsvbox').forEach(updateHsvBoxUI);
 }
 
 /* ============ 出力画面 ============ */
@@ -595,11 +655,22 @@ async function makeShare(){
  const enc=encodeState();
  const url=location.origin.replace('null','file://')+location.pathname+'#d='+enc;
  const box=$('#shareBox'); box.hidden=false;
- box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div><textarea class="urlbox" rows="3" readonly></textarea>`;
+ box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div><textarea class="urlbox" rows="3" readonly></textarea><div id="qrHost" style="text-align:center"></div>`;
  const ta=box.querySelector('textarea'); ta.value=url;
  let ok=false; try{await navigator.clipboard.writeText(url);ok=true;}catch(e){}
  if(!ok){ ta.focus(); ta.select(); try{ok=document.execCommand('copy');}catch(e){} }
  toast(ok?'共有URLをコピーしました':'コピーできませんでした。URLを選択して手動でコピーしてください');
+ renderQR(url);
+}
+function renderQR(url){
+ const host=$('#qrHost'); if(!host) return;
+ if(!window.QRCode){ host.innerHTML='<div class="qrhint">QRコードライブラリを読み込めませんでした（オフライン等）。URLのコピーをご利用ください。</div>'; return; }
+ if(url.length>2800){ host.innerHTML='<div class="qrhint">URLが長すぎるためQRコードを生成できません。メンバー数を減らすか、URLのコピーをご利用ください。</div>'; return; }
+ try{
+  new QRCode(host,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});
+  const cap=document.createElement('div'); cap.className='qrhint'; cap.textContent='スマホのカメラなどで読み取れます';
+  host.appendChild(cap);
+ }catch(e){ host.innerHTML='<div class="qrhint">QRコードを生成できませんでした。URLのコピーをご利用ください。</div>'; }
 }
 
 /* ============ CSV ============ */
@@ -687,7 +758,7 @@ async function openMapCfg(){
  el.innerHTML=`<div class="f"><label>段数（r）</label><input type="number" id="cfR" min="4" max="20" value="${m.rows}"></div>`+
   `<div class="f"><label>列数（c）</label><input type="number" id="cfC" min="4" max="20" value="${m.cols}"></div>`+
   `<div class="f"><label>マス条件</label><select id="cfP"><option value="0">(r+c) が偶数</option><option value="1">(r+c) が奇数</option></select></div>`+
-  `<div class="stat">個別のマスの有効／無効は「マス編集」で切り替えます。</div><button id="cfReset">デフォルト（50マス）に戻す</button>`;
+  `<button id="cfReset">デフォルト（50マス）に戻す</button>`;
  el.querySelector('#cfP').value=m.parity;
  el.querySelector('#cfReset').onclick=()=>{el.querySelector('#cfR').value=10;el.querySelector('#cfC').value=10;el.querySelector('#cfP').value=0;el._reset=true;};
  const r=await dialog({title:'マップ設定',body:el,buttons:[{t:'キャンセル',v:false},{t:'適用',v:true,cls:'pri'}]});
@@ -731,7 +802,7 @@ document.addEventListener('pointermove',e=>{
  drag.x=e.clientX; drag.y=e.clientY;
  const dist=Math.hypot(drag.x-drag.sx,drag.y-drag.sy);
  if(!drag.active){
-  if(drag.kind==='blank'||cellEdit||(drag.kind==='cell'&&!drag.mid)){ if(dist>8) drag.tapCancel=true; return; }
+  if(drag.kind==='blank'||(drag.kind==='cell'&&!drag.mid)){ if(dist>8) drag.tapCancel=true; return; }
   if(drag.kind==='row'&&drag.touch&&!drag.grip){ if(dist>8){clearTimeout(drag.timer);drag.tapCancel=true;} return; }
   if(drag.kind==='row'&&bulkMode){ if(dist>8) drag.tapCancel=true; return; }
   if(dist>5) startGhost();
@@ -764,15 +835,37 @@ function tap(d){
   sel=(sel===d.mid)?null:d.mid; renderAll(); return;
  }
  // cell
- if(cellEdit){
-  mutate(()=>{ const i=S.map.disabled.indexOf(d.key); if(i>=0) S.map.disabled.splice(i,1); else S.map.disabled.push(d.key); });
-  return;
- }
  if(sel){
   if(S.placements[d.key]===sel){ sel=null; renderAll(); return; }
   const id=sel; sel=null; place(id,d.key); return;
  }
- if(d.mid){ sel=d.mid; renderAll(); }
+ if(d.mid){ sel=d.mid; renderAll(); return; }
+ openCellPicker(d.key);
+}
+function openCellPicker(key){
+ const ov=document.createElement('div'); ov.className='ov';
+ const dl=document.createElement('div'); dl.className='dlg';
+ dl.innerHTML='<h3>メンバーを配置</h3><input type="text" id="cpQ" placeholder="名前・チーム検索" style="width:100%">'+
+  '<div class="cplist" id="cpList"></div><div class="dbtn"><button id="cpCancel">キャンセル</button></div>';
+ document.body.appendChild(ov); ov.appendChild(dl);
+ const listEl=dl.querySelector('#cpList'), qEl=dl.querySelector('#cpQ');
+ function draw(){
+  const q=qEl.value.normalize('NFKC').toLowerCase();
+  const un=S.members.filter(m=>!placementOf(m.id));
+  const filtered=q?un.filter(m=>(m.name+' '+m.team).normalize('NFKC').toLowerCase().includes(q)):un;
+  listEl.innerHTML=filtered.length?filtered.map(m=>{
+   const c=memberColor(m);
+   return `<div class="mrow" data-mid="${m.id}"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span><span class="mname">${esc(m.name)}<small>${esc(m.team)}</small></span></div>`;
+  }).join(''):'<div class="stat">未配置メンバーがいません</div>';
+ }
+ draw();
+ qEl.oninput=draw;
+ const close=()=>{ ov.remove(); document.removeEventListener('keydown',kd,true); };
+ const kd=e=>{ if(e.key==='Escape'){ e.stopPropagation(); close(); } };
+ document.addEventListener('keydown',kd,true);
+ listEl.onclick=e=>{ const row=e.target.closest('[data-mid]'); if(!row) return; close(); place(row.dataset.mid,key); };
+ dl.querySelector('#cpCancel').onclick=close;
+ qEl.focus();
 }
 document.addEventListener('keydown',e=>{
  const inField=/^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName||''));
@@ -804,6 +897,10 @@ $('#colChk2').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
 $('#fsRange').oninput=e=>{ui.fontScale=+e.target.value;saveUI();renderAll();};
 $('#fsRange2').oninput=e=>{ui.fontScale=+e.target.value;saveUI();renderAll();};
 $('#listToggle').onclick=()=>{ui.listCollapsed=!ui.listCollapsed;saveUI();renderList();};
+$('#listPreview').addEventListener('click',e=>{
+ const b=e.target.closest('[data-mid]'); if(!b) return;
+ const id=b.dataset.mid; sel=(sel===id)?null:id; renderAll();
+});
 document.querySelectorAll('#filSeg button').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.fil;saveUI();renderList();});
 $('#sortSel').onchange=e=>{ui.sort=e.target.value;saveUI();renderList();};
 $('#qIn').oninput=e=>{ui.q=e.target.value;renderList();};
@@ -811,10 +908,9 @@ $('#title').onchange=e=>{const v=e.target.value;if(v!==S.title) mutate(()=>{S.ti
 $('#memo').onchange=e=>{const v=e.target.value;if(v!==S.memo) mutate(()=>{S.memo=v;});};
 $('#undoBtn').onclick=undo; $('#redoBtn').onclick=redo;
 $('#mapCfgBtn').onclick=openMapCfg;
-$('#cellEditBtn').onclick=()=>{cellEdit=!cellEdit;sel=null;renderAll();};
 $('#clearBtn').onclick=async()=>{ if(!Object.keys(S.placements).length){toast('配置されているメンバーはいません');return;}
  if(await confirmDlg('全配置クリア','配置をすべて解除します（メンバー表は残ります）。','クリアする',true)) mutate(()=>{S.placements={};}); };
-$('#newBtn').onclick=async()=>{ if(await confirmDlg('新しい配置図','編集中のデータ（メンバー表・配置・設定）をすべて初期化します。','初期化する',true)){ snap(); S=defaultState(); sel=null;editingId=null;cellEdit=false; saveLS(); renderAll(); } };
+$('#newBtn').onclick=async()=>{ if(await confirmDlg('新しい配置図','編集中のデータ（メンバー表・配置・設定）をすべて初期化します。','初期化する',true)){ snap(); S=defaultState(); sel=null;editingId=null; saveLS(); renderAll(); } };
 async function openPasteDialog(){
  const ta=document.createElement('textarea'); ta.rows=9; ta.placeholder='例）\nたろう,1組,たろ,#e57373\nはなこ,2組\nじろう';
  const b=document.createElement('div');
@@ -857,12 +953,21 @@ $('#bulkColorBtn').onclick=async()=>{
  const el=document.createElement('div');
  el.innerHTML=`<div class="hint">選択中 ${bulkSel.size}名 のカラーをまとめて設定します（空欄でチーム色に戻す）。</div>`+
   swatchBar('','bulk')+
-  `<div class="f"><label>カラー</label><div class="cw"><input type="text" id="bkColor" placeholder="空欄＝チーム色" style="flex:1"><input type="color" id="bkColorPick" value="#e57373"></div></div>`;
+  `<div class="f"><label>カラー</label><div class="cw"><input type="text" id="bkColor" placeholder="空欄＝チーム色" style="flex:1"><input type="color" id="bkColorPick" value="#ff0000"></div></div>`+
+  hsvBox('#ff0000');
  el.querySelector('[data-swatch="bulk"]').addEventListener('click',e=>{
   const s=e.target.closest('.swatch'); if(!s) return;
   el.querySelector('#bkColor').value=s.dataset.color; el.querySelector('#bkColorPick').value=s.dataset.color;
  });
  el.querySelector('#bkColorPick').addEventListener('input',e=>{ el.querySelector('#bkColor').value=e.target.value; });
+ const hsvRoot=el.querySelector('.hsvbox'); updateHsvBoxUI(hsvRoot);
+ hsvRoot.querySelectorAll('input[type=range]').forEach(inp=>{
+  inp.addEventListener('input',()=>{
+   updateHsvBoxUI(hsvRoot);
+   const hex=readHsvBox(hsvRoot);
+   el.querySelector('#bkColor').value=hex; el.querySelector('#bkColorPick').value=hex;
+  });
+ });
  const r=await dialog({title:'カラー一括変更',body:el,buttons:[{t:'キャンセル',v:false},{t:'設定',v:true,cls:'pri'}]});
  if(!r) return;
  let v=el.querySelector('#bkColor').value.trim();
@@ -894,7 +999,17 @@ $('#rows').addEventListener('click',e=>{
  else if(act==='unplace') unplace(id);
  else if(act==='del') confirmDlg('メンバー削除','このメンバーを削除します（配置も解除されます）。','削除する',true).then(ok=>{ if(ok) mutate(()=>{S.members=S.members.filter(m=>m.id!==id);}); });
 });
+$('#rows').addEventListener('input',e=>{
+ const r=e.target.closest('.hsvbox input[type=range]'); if(!r) return;
+ updateHsvBoxUI(r.closest('.hsvbox'));
+});
 $('#rows').addEventListener('change',e=>{
+ const r=e.target.closest('.hsvbox input[type=range]');
+ if(r){
+  const box=r.closest('.hsvbox'), hex=readHsvBox(box);
+  const eid=box.closest('[data-eid]').dataset.eid, m=memberById(eid); if(!m) return;
+  addCustomColor(hex); mutate(()=>{m.color=hex;}); return;
+ }
  if(e.target.classList.contains('bsel')){
   const id=e.target.dataset.mid; if(e.target.checked) bulkSel.add(id); else bulkSel.delete(id);
   $('#bulkCount').textContent=`選択中 ${bulkSel.size}名`; return;
@@ -908,7 +1023,16 @@ $('#rows').addEventListener('change',e=>{
  else if(f==='color'){ v=v.trim(); if(v&&!toHex(v)){toast('色を認識できません（例：#ff8800、orange）');renderList();return;} if(v) addCustomColor(v); mutate(()=>{m.color=v;}); }
  else if(f==='colorpick'){ addCustomColor(v); mutate(()=>{m.color=v;}); }
 });
+$('#teamBox').addEventListener('input',e=>{
+ const r=e.target.closest('.hsvbox input[type=range]'); if(!r) return;
+ updateHsvBoxUI(r.closest('.hsvbox'));
+});
 $('#teamBox').addEventListener('change',e=>{
+ const r=e.target.closest('.hsvbox input[type=range]');
+ if(r){
+  const box=r.closest('.hsvbox'), hex=readHsvBox(box), t=box.closest('[data-team]').dataset.team;
+  addCustomColor(hex); mutate(()=>{S.teamColors[t]=hex;}); return;
+ }
  if(e.target.type!=='color') return; const t=e.target.closest('[data-team]').dataset.team; addCustomColor(e.target.value); mutate(()=>{S.teamColors[t]=e.target.value;});
 });
 $('#teamBox').addEventListener('click',e=>{
