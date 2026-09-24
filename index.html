@@ -68,14 +68,7 @@ svg.map .cell.hl polygon{stroke:#ff6d00;stroke-width:4}
 .mname{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mname small{color:var(--sub);margin-left:6px}
 .pos{font-size:12px}
-.edrow{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:8px;margin:2px 0 6px;display:grid;grid-template-columns:70px 1fr;gap:5px 8px;align-items:center}
-.edrow .full{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
-.edrow input[type=text]{width:100%}
-.edrow .cw{display:flex;gap:6px}
-input[type=color]{width:38px;height:30px;padding:1px;border:1px solid var(--line);border-radius:6px;background:#fff}
 #rows{max-height:52vh;overflow:auto}
-.teamrow{display:flex;align-items:center;gap:6px;padding:2px 0}
-.teamrow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 details.card>summary{cursor:pointer;font-weight:600}
 .stat{color:var(--sub);margin:6px 0}
 .ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:flex;align-items:center;justify-content:center;padding:12px}
@@ -85,6 +78,7 @@ details.card>summary{cursor:pointer;font-weight:600}
 .dlg .f{display:grid;grid-template-columns:90px 1fr;gap:8px;align-items:center;margin:6px 0}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:8px;z-index:200;max-width:90vw;opacity:0;transition:opacity .2s;pointer-events:none;display:flex;align-items:center;gap:10px}
 #toast.on{opacity:.95}
+body:has(.ov) #toast{bottom:auto;top:calc(var(--hdrH,46px) + 8px)}
 #toast.has-btn{pointer-events:auto}
 #toast button{background:#fff;color:#222;border:none;padding:4px 10px;border-radius:6px;font-size:12px;flex-shrink:0}
 .ghost{position:fixed;z-index:150;pointer-events:none;transform:translate(-50%,-140%);opacity:.9}
@@ -94,9 +88,10 @@ details.card>summary{cursor:pointer;font-weight:600}
 #outSideSeg{display:none;margin-bottom:8px}
 .note{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:6px 10px;margin:8px 0;font-weight:600}
 .legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px}
-.legend .g{border:1px solid var(--line);border-radius:8px;padding:8px;background:#fff}
-.legend .g h4{margin:0 0 4px;display:flex;align-items:center;gap:6px}
-.legend .it{display:flex;align-items:center;gap:6px;padding:1px 0}
+.legend .g{border:1px solid var(--line);border-radius:8px;padding:0 0 8px;background:#fff;overflow:hidden}
+.legend .gh{display:flex;align-items:baseline;gap:8px;padding:7px 10px;margin-bottom:6px;border-left:6px solid var(--tc,#9aa0a6);background:#f3f4f6;font-weight:700;font-size:15px}
+.legend .gh small{font-weight:400;color:var(--sub);font-size:12px}
+.legend .it{display:flex;align-items:center;gap:8px;padding:2px 10px}
 .memo{white-space:pre-wrap;margin:6px 0}
 .title{font-size:20px;font-weight:700;margin:4px 0}
 .urlbox{width:100%;font-size:12px}
@@ -108,8 +103,6 @@ details.card>summary{cursor:pointer;font-weight:600}
 .menu button{text-align:left;border:none;border-radius:6px;padding:7px 10px}
 .menu button:hover{background:#f0f2f5}
 .bulkbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fff4e8;border:1px solid #ffcc80;border-radius:8px;padding:6px 8px;margin:6px 0}
-.teamrow .swatchbar{flex-basis:100%;margin:2px 0 4px}
-.teamrow .hsv{flex-basis:100%}
 .mrow .bsel{margin-right:2px}
 .rangewrap{display:inline-flex;align-items:center;gap:6px;font-size:13px}
 .rangewrap input[type=range]{width:100px}
@@ -122,12 +115,6 @@ details.card>summary{cursor:pointer;font-weight:600}
 .previewchip{border:2px solid transparent;cursor:pointer}
 .previewchip.placed{opacity:.55}
 .previewchip.sel{border-color:#ff6d00;opacity:1}
-.hsv{margin-top:6px}
-.hsv summary{cursor:pointer;font-size:12px;color:var(--pri)}
-.edrow .cw.colorline{flex-wrap:wrap;align-items:center}
-.colordetail{margin-top:4px}
-.colordetail summary{cursor:pointer;font-size:12px;color:var(--pri)}
-.colordetail>.cw{margin-top:6px}
 .hsvbox{margin-top:6px}
 .hsvrow{display:flex;align-items:center;gap:8px;margin:5px 0}
 .hsvrow .hsvlab{width:32px;font-size:12px;color:var(--sub)}
@@ -174,6 +161,41 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
 .outhead{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
 .outhead .title{flex:1;min-width:0}
 #shareBtn{width:100%}
+.shl{font-size:12px;font-weight:700;color:var(--sub);margin:12px 0 4px;display:flex;gap:6px;align-items:baseline}
+.shl:first-child{margin-top:4px}
+.shl .hint{font-weight:400}
+.urlrow{display:flex;gap:6px}
+.urlrow input{flex:1;min-width:0;font-size:13px;background:#f8f9fb}
+.cpbtn{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;flex-shrink:0}
+.cpbtn svg{width:16px;height:16px;flex-shrink:0}
+button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
+#shortBtn{width:100%}
+#shareUrlBtn{width:100%;margin-top:10px}
+#qrHost{text-align:center;margin-top:14px}
+#qrHost canvas,#qrHost img{margin:0 auto}
+/* メンバー表：チーム別表示 */
+.tgroup{margin:4px 0 10px}
+.tgh{display:flex;align-items:center;gap:8px;padding:6px 8px;background:#f3f4f6;border-radius:8px;border-left:5px solid var(--tc,#9aa0a6);margin-bottom:2px}
+.tgh .tname{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tgh small{color:var(--sub);white-space:nowrap}
+.tcolor{width:28px;height:28px;padding:0;border-radius:6px;border:2px solid #fff;box-shadow:0 0 0 1px var(--line);flex-shrink:0}
+/* 色選び・メンバー編集（シート） */
+.cp-head{display:flex;align-items:center;gap:10px}
+.cp-now{width:64px;height:40px;border-radius:8px;border:1px solid var(--line);flex-shrink:0}
+.cp-head input{width:120px}
+.cp-sec{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-size:12px;color:var(--sub);font-weight:700}
+.cp-sec .sp{flex:1}
+.linkbtn{border:none;background:none;color:var(--pri);padding:2px 4px;font-size:13px}
+.linkbtn:hover{background:none;text-decoration:underline}
+.cp-pal{display:flex;flex-wrap:wrap;gap:7px}
+.cp-pal .swatch{width:34px;height:34px}
+.cp-pal.editing .swatch{outline:2px dashed #b0b6c0;outline-offset:1px}
+.cp-editbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-top:8px;font-size:12px;color:var(--sub)}
+.cp-opt{display:flex;gap:6px;align-items:flex-start;margin-top:12px;font-size:13px}
+.me-color{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.colorbtn{display:inline-flex;align-items:center;gap:8px}
+.dlg .f input[type=text]{width:100%}
+.dbtn .sp{flex:1}
 @media(max-width:900px){
  .layout{grid-template-columns:1fr}
  .layout{display:block}
@@ -182,7 +204,6 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
  #listPane{margin-top:10px}
  #mapSticky{position:sticky;top:var(--hdrH,44px);z-index:20;padding-bottom:4px;box-shadow:0 4px 8px -6px rgba(0,0,0,.4)}
  svg.map{max-height:40vh}
- #mapSticky .side-h{font-size:13px;margin:0}
  #infoBar{margin-top:4px;padding:6px 8px;min-height:0}
  .ib-long{display:none}
  #rows{max-height:none}
@@ -190,6 +211,9 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
  main{padding:8px}
  .listToggleBtn{display:inline-flex}
  .outgrid{grid-template-columns:1fr}
+ #listPane{scroll-margin-top:calc(var(--hdrH,46px) + 40vh + 56px)}
+ .nextbar .grow{flex-basis:100%}
+ .nextbar button{flex:1}
  #sharePanel{position:static;order:-1}
  body.viewing #sharePanel{order:2}
  #listPane.collapsed #listBody{display:none}
@@ -214,15 +238,19 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
  .menuwrap{flex-shrink:0}
  .savest .lbl{display:none}
 }
-@media(max-width:400px){
- .tabs .tl{display:none}
+@media(max-width:600px){
+ /* ダイアログは画面下からのシート表示 */
+ .ov{align-items:flex-end;padding:0}
+ .dlg{border-radius:14px 14px 0 0;max-height:88vh;padding:14px 14px calc(16px + env(safe-area-inset-bottom))}
+ .outhead{flex-wrap:wrap}
+ .outhead .title{flex-basis:100%}
 }
 </style>
 </head>
 <body>
 <header id="top">
  <h1>三方配置図ツール</h1>
- <div class="tabs" id="tabs"><button data-mode="edit">① 配置<span class="tl">する</span></button><button data-mode="out">② <span class="tl">確認・</span>共有</button></div>
+ <div class="tabs" id="tabs"><button data-mode="edit">作成</button><button data-mode="out">共有</button></div>
  <span class="badge" id="viewBadge" hidden>閲覧モード</span>
  <span class="sp"></span>
  <span class="savest" id="saveSt" title="編集内容はこのブラウザに自動保存されます">✓<span class="lbl"> 自動保存済み</span></span>
@@ -248,7 +276,6 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
  <div class="layout">
   <section id="mapPane" class="card">
    <div id="onboard" class="onboard" hidden>
-    <div class="ob-step">STEP 1</div>
     <div class="ob-h">まずはメンバーを登録しましょう</div>
     <div class="ob-sub">メンバー表を読み込むと、マップのマスに配置できるようになります。</div>
     <div class="ob-btns">
@@ -273,15 +300,14 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
     <button id="mapCfgBtn">マップの形を変更…</button>
    </div>
    <div id="mapSticky">
-    <div class="side-h" id="sideHead"></div>
     <div class="mapwrap" id="mapHost"></div>
     <div id="infoBar"></div>
    </div>
-   <div class="note">中央方向が先頭（前線）です</div>
-   <textarea id="memo" rows="2" placeholder="メモ（任意）"></textarea>
+   <textarea id="memo" rows="2" placeholder="メモ（任意）" style="margin-top:8px"></textarea>
    <div class="nextbar" id="nextBar">
     <span class="grow" id="nextStat"></span>
-    <button id="toOutBtn" class="pri big">② 確認・共有へ進む →</button>
+    <button id="showUnBtn" class="big">未配置の人を表示</button>
+    <button id="toOutBtn" class="big">共有へ進む →</button>
    </div>
   </section>
 
@@ -293,8 +319,9 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
    <div id="listPreview"></div>
    <div id="listBody">
    <div class="toolbar">
+    <div class="seg" id="viewSeg"><button data-lv="list">一覧</button><button data-lv="team">チーム別</button></div>
+    <span class="sp"></span>
     <button id="addBtn">＋1名追加</button>
-    <span class="hint">CSVの読込・書き出しは上部の「ファイル」から</span>
    </div>
    <div class="stat" id="stat"></div>
    <div class="toolbar">
@@ -307,13 +334,12 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
    </div>
    <div class="bulkbar" id="bulkBar" hidden>
     <span id="bulkCount">選択中 0名</span>
-    <button id="bulkTeamBtn">チーム一括設定</button>
-    <button id="bulkColorBtn">カラー一括変更</button>
+    <button id="bulkTeamBtn">チームを変更</button>
+    <button id="bulkColorBtn">カラーを変更</button>
     <button id="bulkAllBtn">全選択</button>
     <button id="bulkClearBtn">選択解除</button>
    </div>
    <div id="rows"></div>
-   <details class="card" style="margin-top:10px"><summary>チーム一覧・チーム色</summary><div id="teamBox" style="margin-top:6px"></div></details>
    </div>
   </aside>
  </div>
@@ -327,8 +353,8 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
  <div class="outgrid">
  <section class="card" id="sharePanel">
   <h3 class="sec-h">共有する</h3>
-  <p class="hint" style="margin:0 0 8px">URLを送るか、QRコードを読み取ってもらうと、相手はこの配置図を閲覧できます。</p>
-  <button id="shareBtn" class="pri big">共有URL・QRコードを作成</button>
+  <p class="hint" style="margin:0 0 8px">URLかQRコードを送ると、相手はこの配置図を閲覧できます（相手が編集することはできません）。</p>
+  <button id="shareBtn" class="pri big">共有URLを作成</button>
   <div id="shareBox" hidden></div>
  </section>
  <div class="card" id="outMain">
@@ -343,7 +369,6 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
    <label class="chk"><input type="checkbox" id="colChk2">列番号</label>
    <span class="rangewrap">文字サイズ<input type="range" id="fsRange2" min="0.8" max="1.8" step="0.1"></span>
   </div>
-  <div class="note">中央方向が先頭（前線）です</div>
   <div class="seg" id="outSideSeg"><button data-oside="L">左陣地</button><button data-oside="R">右陣地</button></div>
   <div class="pair">
    <div><div class="side-h">左陣地の場合</div><div class="mapwrap" id="mapL"></div></div>
@@ -371,8 +396,8 @@ const GRAY='#9aa0a6';
 
 const defaultState=()=>({v:1,title:'',memo:'',map:{rows:10,cols:10,parity:0,disabled:[]},members:[],teamColors:{},placements:{}});
 let S=defaultState();
-let mode='edit', viewing=false, editSide='L', sel=null, editingId=null;
-let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:true,cfgOpen:false,outSide:'L'};
+let mode='edit', viewing=false, editSide='L', sel=null;
+let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:false,cfgOpen:false,outSide:'L',listView:'list',uiv:2};
 let undoStack=[], redoStack=[], idSeq=0;
 let bulkMode=false, bulkSel=new Set();
 
@@ -395,6 +420,8 @@ function setSaveSt(ok){
 function saveUI(){ try{localStorage.setItem(UI_KEY,JSON.stringify(ui));}catch(e){} }
 function loadLS(){
  try{const t=localStorage.getItem(UI_KEY); if(t) Object.assign(ui,JSON.parse(t)); ui.q='';}catch(e){}
+ // 旧バージョンでは「メンバー表をたたむ」が初期値だったため、一度だけ展開状態に戻す
+ if((ui.uiv||0)<2){ ui.listCollapsed=false; ui.uiv=2; saveUI(); }
  try{const t=localStorage.getItem(LS_KEY); if(t){ S=sanitize(JSON.parse(t)); }}catch(e){}
 }
 
@@ -463,10 +490,6 @@ function addCustomColor(hex){
  saveUI();
 }
 function paletteColors(){ return PAL5.concat(ui.customColors); }
-function swatchBar(cur,name){
- const c=toHex(cur);
- return `<div class="swatchbar" data-swatch="${name}">`+paletteColors().map(h=>`<button type="button" class="swatch${h===c?' on':''}" data-color="${h}" style="background:${h}" title="${h}"></button>`).join('')+'</div>';
-}
 function hsv2hex(h,s,v){
  s/=100; v/=100;
  const k=n=>(n+h/60)%6;
@@ -487,19 +510,6 @@ function hex2hsv(hex){
  if(h<0) h+=360;
  const s=max===0?0:d/max;
  return {h:Math.round(h),s:Math.round(s*100),v:Math.round(max*100)};
-}
-function hsvBox(hex){
- const {h,s,v}=hex2hsv(hex);
- return `<details class="hsv"><summary>カスタムカラー（色相・彩度・明度で指定）</summary><div class="hsvbox">`+
-  `<div class="hsvrow"><span class="hsvlab">色相</span><input type="range" class="hsvH" min="0" max="360" value="${h}"><span class="hsvval">${h}</span></div>`+
-  `<div class="hsvrow"><span class="hsvlab">彩度</span><input type="range" class="hsvS" min="0" max="100" value="${s}"><span class="hsvval">${s}</span></div>`+
-  `<div class="hsvrow"><span class="hsvlab">明度</span><input type="range" class="hsvV" min="0" max="100" value="${v}"><span class="hsvval">${v}</span></div>`+
-  `<div class="hsvpreview" style="background:${hex}"></div>`+
-  `</div></details>`;
-}
-function readHsvBox(root){
- const h=+root.querySelector('.hsvH').value, s=+root.querySelector('.hsvS').value, v=+root.querySelector('.hsvV').value;
- return hsv2hex(h,s,v);
 }
 function updateHsvBoxUI(root){
  const h=+root.querySelector('.hsvH').value, s=+root.querySelector('.hsvS').value, v=+root.querySelector('.hsvV').value;
@@ -532,7 +542,6 @@ function cleanup(){
   if(!ids.has(id)||used.has(id)||!isCellIn(S,k)) delete S.placements[k]; else used.add(id);
  }
  if(sel&&!ids.has(sel)) sel=null;
- if(editingId&&!ids.has(editingId)) editingId=null;
  for(const id of [...bulkSel]) if(!ids.has(id)) bulkSel.delete(id);
  for(const t of Object.keys(S.teamColors)) if(!S.members.some(m=>m.team===t)) delete S.teamColors[t];
 }
@@ -550,7 +559,7 @@ function place(mid,key){
   if(occ&&prev) S.placements[prev]=occ;
   S.placements[key]=mid;
  });
- toast((occ&&prev&&occName)?`${mName} と ${occName} を入れ替えました`:`${mName} を配置しました`,{undo:true});
+ if(occ&&prev&&occName) toast(`${mName} と ${occName} を入れ替えました`,{undo:true});
 }
 function unplace(mid){
  const k=placementOf(mid); if(!k) return;
@@ -574,9 +583,161 @@ function dialog({title,body,buttons}){
    const e=document.createElement('button'); e.textContent=x.t; if(x.cls) e.className=x.cls; e.onclick=()=>done(x.v); bt.appendChild(e);
   });
   dl.appendChild(bt); ov.appendChild(dl); document.body.appendChild(ov);
-  const kd=e=>{if(e.key==='Escape'){e.stopPropagation();done(null);}};
+  const kd=e=>{if(e.key==='Escape'&&isTopOv(ov)){e.stopPropagation();done(null);}};
   document.addEventListener('keydown',kd,true);
   const f=dl.querySelector('input,textarea'); if(f) f.focus();
+ });
+}
+function isTopOv(ov){ const a=document.querySelectorAll('.ov'); return a[a.length-1]===ov; }
+// 汎用シート（スマホでは画面下から表示）。close() で閉じ、onclose を呼ぶ
+function sheet(title){
+ const ov=document.createElement('div'); ov.className='ov';
+ const dl=document.createElement('div'); dl.className='dlg'; dl.setAttribute('role','dialog');
+ dl.innerHTML=`<h3>${esc(title)}</h3>`;
+ ov.appendChild(dl); document.body.appendChild(ov);
+ const kd=e=>{ if(e.key==='Escape'&&isTopOv(ov)){ e.stopPropagation(); api.close(); } };
+ document.addEventListener('keydown',kd,true);
+ ov.addEventListener('click',e=>{ if(e.target===ov) api.close(); });
+ const api={ov,dl,onclose:null,close(){
+  if(!ov.isConnected) return;
+  ov.remove(); document.removeEventListener('keydown',kd,true);
+  if(api.onclose) api.onclose();
+ }};
+ return api;
+}
+
+/* ============ 色選び ============ */
+// 戻り値：{color:'#rrggbb' または ''（リセット）, checked} / キャンセル時 null
+// スライダーはプレビューだけを変え、「この色にする」を押したときに確定・パレットへ保存する
+function openColorPicker({title,current,resetLabel,note,option}){
+ return new Promise(res=>{
+  const sh=sheet(title||'色を選ぶ'); let result=null;
+  sh.onclose=()=>res(result);
+  let cur=toHex(current)||PAL5[0], editMode=false, editIdx=-1;
+  const body=document.createElement('div'); sh.dl.appendChild(body);
+  body.innerHTML=
+   '<div class="cp-head"><div class="cp-now"></div><input type="text" class="cp-hex" aria-label="カラーコード"></div>'+
+   (note?`<div class="hint" style="margin-top:6px">${note}</div>`:'')+
+   '<div class="cp-sec">基本の色</div><div class="cp-pal" data-k="base"></div>'+
+   '<div class="cp-sec">カスタムカラー<span class="sp"></span><button type="button" class="linkbtn cp-edit">編集</button></div>'+
+   '<div class="cp-pal" data-k="cust"></div><div class="cp-editbar" hidden></div>'+
+   '<div class="cp-sec">色を調整</div><div class="hsvbox">'+
+    '<div class="hsvrow"><span class="hsvlab">色相</span><input type="range" class="hsvH" min="0" max="360"><span class="hsvval"></span></div>'+
+    '<div class="hsvrow"><span class="hsvlab">彩度</span><input type="range" class="hsvS" min="0" max="100"><span class="hsvval"></span></div>'+
+    '<div class="hsvrow"><span class="hsvlab">明度</span><input type="range" class="hsvV" min="0" max="100"><span class="hsvval"></span></div>'+
+   '</div>'+
+   (option?`<label class="cp-opt"><input type="checkbox" class="cp-chk"${option.checked?' checked':''}><span>${option.label}</span></label>`:'')+
+   '<div class="dbtn"><button type="button" data-b="cancel">キャンセル</button>'+
+   (resetLabel?`<button type="button" data-b="reset">${resetLabel}</button>`:'')+
+   '<button type="button" class="pri" data-b="ok">この色にする</button></div>';
+  const hsvRoot=body.querySelector('.hsvbox'), hexIn=body.querySelector('.cp-hex');
+  const setSliders=hex=>{ const v=hex2hsv(hex); hsvRoot.querySelector('.hsvH').value=v.h; hsvRoot.querySelector('.hsvS').value=v.s; hsvRoot.querySelector('.hsvV').value=v.v; updateHsvBoxUI(hsvRoot); };
+  function draw(){
+   body.querySelector('.cp-now').style.background=cur;
+   if(document.activeElement!==hexIn) hexIn.value=cur;
+   body.querySelector('[data-k="base"]').innerHTML=PAL5.map(h=>`<button type="button" class="swatch${h===cur?' on':''}" data-color="${h}" style="background:${h}" title="${h}"></button>`).join('');
+   const cust=body.querySelector('[data-k="cust"]');
+   cust.classList.toggle('editing',editMode);
+   cust.innerHTML=ui.customColors.length?ui.customColors.map((h,i)=>`<button type="button" class="swatch${(editMode?i===editIdx:h===cur)?' on':''}" data-color="${h}" data-i="${i}" style="background:${h}" title="${h}"></button>`).join(''):
+    '<span class="hint">スライダーで作った色は「この色にする」を押すとここに保存されます。</span>';
+   const eb=body.querySelector('.cp-edit'); eb.hidden=!ui.customColors.length&&!editMode; eb.textContent=editMode?'完了':'編集';
+   const bar=body.querySelector('.cp-editbar'); bar.hidden=!editMode;
+   bar.innerHTML=editIdx<0?'調整・削除したい色をタップしてください':
+    '<button type="button" data-b="over">調整した色で上書き</button><button type="button" class="dan" data-b="delc">この色を削除</button><span>スライダーで調整してから上書きできます</span>';
+  }
+  setSliders(cur); draw();
+  body.addEventListener('input',e=>{
+   if(!e.target.closest('.hsvbox')) return;
+   updateHsvBoxUI(hsvRoot);
+   const h=+hsvRoot.querySelector('.hsvH').value, sa=+hsvRoot.querySelector('.hsvS').value, v=+hsvRoot.querySelector('.hsvV').value;
+   cur=hsv2hex(h,sa,v); draw();
+  });
+  hexIn.addEventListener('change',()=>{ const h=toHex(hexIn.value); if(!h){ toast('色を認識できません（例：#ff8800）'); hexIn.value=cur; return; } cur=h; setSliders(cur); draw(); });
+  body.addEventListener('click',e=>{
+   const sw=e.target.closest('.swatch');
+   if(sw){
+    cur=sw.dataset.color; editIdx=(editMode&&sw.dataset.i!=null)?+sw.dataset.i:-1;
+    setSliders(cur); draw(); return;
+   }
+   if(e.target.closest('.cp-edit')){ editMode=!editMode; editIdx=-1; draw(); return; }
+   const b=e.target.closest('[data-b]'); if(!b) return;
+   const k=b.dataset.b, chk=body.querySelector('.cp-chk');
+   if(k==='over'){
+    const cc=ui.customColors.filter((h,i)=>i===editIdx||h!==cur); const i=cc.indexOf(ui.customColors[editIdx]);
+    cc[i]=cur; ui.customColors=cc; editIdx=i; saveUI(); draw(); toast('カスタムカラーを上書きしました');
+   }else if(k==='delc'){
+    ui.customColors.splice(editIdx,1); editIdx=-1; saveUI(); draw(); toast('カスタムカラーを削除しました');
+   }else if(k==='ok'){
+    if(!PAL5.includes(cur)&&!ui.customColors.includes(cur)) addCustomColor(cur);
+    result={color:cur,checked:!!(chk&&chk.checked)}; sh.close();
+   }else if(k==='reset'){ result={color:'',checked:!!(chk&&chk.checked)}; sh.close(); }
+   else if(k==='cancel') sh.close();
+  });
+ });
+}
+
+/* ============ メンバー編集（シート） ============ */
+function openMemberEditor(id,focusName){
+ if(!memberById(id)) return;
+ const sh=sheet('メンバーの編集'), body=document.createElement('div'); sh.dl.appendChild(body);
+ function draw(){
+  const m=memberById(id); if(!m){ sh.close(); return; }
+  const col=memberColor(m), p=placementOf(m.id);
+  body.innerHTML=
+   `<div class="f"><label>メンバー名</label><input type="text" data-f="name" value="${esc(m.name)}"></div>`+
+   `<div class="f"><label>チーム</label><input type="text" data-f="team" value="${esc(m.team)}" placeholder="（任意）" list="meTeams"></div>`+
+   `<datalist id="meTeams">${teamOrder().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`+
+   `<div class="f"><label>表示名</label><input type="text" data-f="short" value="${esc(m.short)}" placeholder="${esc(defShort(m.name))}（自動）"></div>`+
+   `<div class="f"><label>カラー</label><div class="me-color"><button type="button" class="colorbtn" data-b="color"><span class="chip" style="background:${col};color:${textColor(col)}">${esc(shortOf(m))}</span>色を選ぶ…</button>`+
+    (m.color?'<button type="button" class="linkbtn" data-b="creset">チーム色に戻す</button>':'<span class="hint">チーム色</span>')+'</div></div>'+
+   '<div class="hint" style="margin-top:4px">メンバー名以外は空欄のままで構いません。</div>'+
+   `<div class="dbtn">${p?'<button type="button" data-b="unplace">配置から外す</button>':''}<button type="button" class="dan" data-b="del">削除</button><span class="sp"></span><button type="button" class="pri" data-b="close">閉じる</button></div>`;
+ }
+ draw();
+ body.addEventListener('change',e=>{
+  const f=e.target.dataset.f, m=memberById(id); if(!f||!m) return;
+  let v=e.target.value;
+  if(f==='name'){ v=normName(v); if(!v||S.members.some(x=>x.id!==id&&x.name===v)){toast(v?'同じ名前のメンバーがいます':'名前は必須です');draw();return;} if(v!==m.name) mutate(()=>{m.name=v;}); }
+  else if(f==='team'){ v=normTeam(v); if(v!==m.team) mutate(()=>{m.team=v;}); }
+  else if(f==='short'){ v=v.trim(); if(v!==m.short) mutate(()=>{m.short=v;}); }
+  draw();
+ });
+ body.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-b]'); if(!b) return;
+  const k=b.dataset.b, m=memberById(id); if(!m){ sh.close(); return; }
+  if(k==='close') sh.close();
+  else if(k==='color'){
+   const r=await openColorPicker({title:`${m.name} の色`,current:memberColor(m),resetLabel:m.color?'チーム色に戻す':null});
+   if(r){ const mm=memberById(id); if(mm) mutate(()=>{mm.color=r.color;}); }
+   draw();
+  }
+  else if(k==='creset'){ mutate(()=>{m.color='';}); draw(); }
+  else if(k==='unplace'){ unplace(id); draw(); }
+  else if(k==='del'){ if(await confirmDlg('メンバー削除',`${esc(m.name)} を削除します（配置も解除されます）。`,'削除する',true)){ mutate(()=>{S.members=S.members.filter(x=>x.id!==id);}); sh.close(); } }
+ });
+ if(focusName){ const i=body.querySelector('[data-f="name"]'); i.focus(); i.select(); }
+}
+async function editTeamColor(t){
+ const ms=S.members.filter(m=>m.team===t), indiv=ms.filter(m=>toHex(m.color)).length;
+ const r=await openColorPicker({title:`「${t}」のチーム色`,current:teamColor(t),resetLabel:S.teamColors[t]?'自動の色に戻す':null,
+  option:indiv?{label:`個別に色を設定しているメンバー（${indiv}名）もこの色にそろえる`,checked:false}:null});
+ if(!r) return;
+ mutate(()=>{
+  if(r.color) S.teamColors[t]=r.color; else delete S.teamColors[t];
+  if(r.checked) S.members.forEach(m=>{ if(m.team===t) m.color=''; });
+ });
+}
+async function renameTeam(t){
+ const el=document.createElement('div');
+ el.innerHTML=`<div class="f"><label>チーム名</label><input type="text" id="rnTeam" value="${esc(t)}"></div><div class="hint">既にあるチーム名にすると、そのチームにまとめられます。</div>`;
+ const r=await dialog({title:'チーム名を変更',body:el,buttons:[{t:'キャンセル',v:false},{t:'変更',v:true,cls:'pri'}]});
+ if(!r) return;
+ const v=normTeam(el.querySelector('#rnTeam').value); if(!v||v===t) return;
+ mutate(()=>{
+  const had=S.teamColors[v];
+  S.members.forEach(m=>{ if(m.team===t) m.team=v; });
+  if(S.teamColors[t]&&!had) S.teamColors[v]=S.teamColors[t];
+  delete S.teamColors[t];
  });
 }
 const confirmDlg=(title,msg,ok='OK',danger=false)=>dialog({title,body:'<div>'+msg+'</div>',buttons:[{t:'キャンセル',v:false},{t:ok,v:true,cls:danger?'pri dan':'pri'}]});
@@ -687,12 +848,14 @@ function renderEdit(){
  document.querySelectorAll('#labSeg button').forEach(b=>b.classList.toggle('on',b.dataset.lab===ui.label));
  $('#colChk').checked=ui.cols;
  setRange($('#fsRange'),ui.fontScale);
- $('#sideHead').textContent=(editSide==='L'?'左陣地の場合':'右陣地の場合')+'（編集中）';
  renderCfg();
  const n=S.members.length, placed=Object.keys(S.placements).length;
  $('#onboard').hidden=n>0;
  $('#nextBar').hidden=n===0;
- $('#nextStat').textContent=placed<n?`未配置 ${n-placed}名（未配置のままでも共有できます）`:`全員（${n}名）配置済みです`;
+ const un=n-placed;
+ $('#nextStat').innerHTML=un>0?`あと <b>${un}名</b>が未配置です<br><small>未配置のままでも共有できます</small>`:`全員（${n}名）の配置が完了しました ✓`;
+ $('#showUnBtn').hidden=un===0;
+ $('#toOutBtn').classList.toggle('pri',un===0);
  $('#mapHost').innerHTML=mapSVG(editSide==='R');
  renderInfo(); renderList();
 }
@@ -722,6 +885,8 @@ function renderList(){
  $('#bulkModeBtn').textContent=bulkMode?'一括選択を終了':'一括選択';
  $('#bulkBar').hidden=!bulkMode;
  $('#bulkCount').textContent=`選択中 ${bulkSel.size}名`;
+ document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.lv===ui.listView));
+ $('#sortSel').hidden=ui.listView==='team';
  const to=teamOrder(); const q=ui.q.normalize('NFKC').toLowerCase();
  let list=S.members.map((m,i)=>({m,i,p:placementOf(m.id)}));
  if(ui.filter==='un') list=list.filter(x=>!x.p); if(ui.filter==='pl') list=list.filter(x=>x.p);
@@ -731,34 +896,31 @@ function renderList(){
  else if(ui.sort==='name') list.sort((a,b)=>a.m.name.localeCompare(b.m.name,'ja'));
  if(ui.filter==='all') list.sort((a,b)=>(a.p?1:0)-(b.p?1:0)); // 未配置を上に（安定ソート）
  const rows=$('#rows'), sc=rows.scrollTop;
- rows.innerHTML=list.length?list.map(({m,p})=>{
-  const col=memberColor(m), s=sel===m.id, bs=bulkSel.has(m.id);
-  let h=`<div class="mrow${s?' sel':''}${p?' placed':''}" data-mid="${m.id}">`+
-   (bulkMode?`<input type="checkbox" class="bsel" data-mid="${m.id}"${bs?' checked':''}>`:`<span class="grip" title="ドラッグして配置">≡</span>`)+
-   `<span class="chip" style="background:${col};color:${textColor(col)}">${esc(shortOf(m))}</span>`+
-   `<span class="mname">${esc(m.name)}<small>${esc(m.team)}</small></span><span class="pos">${p?'配置済':'未配置'}</span>`+
-   `<button data-act="edit" title="編集">✎</button></div>`;
-  if(editingId===m.id){
-   h+=`<div class="edrow" data-eid="${m.id}"><div class="full hint">メンバー名以外の項目は空欄のままで構いません。</div><label>メンバー名</label><input type="text" data-f="name" value="${esc(m.name)}">`+
-    `<label>チーム</label><input type="text" data-f="team" value="${esc(m.team)}" placeholder="（任意）">`+
-    `<label>表示名</label><input type="text" data-f="short" value="${esc(m.short)}" placeholder="${esc(defShort(m.name))}（自動）">`+
-    `<label>カラー</label><div class="cw colorline">${swatchBar(col,'m:'+m.id)}${m.color?'<button type="button" data-act="colorreset">チーム色に戻す</button>':''}</div>`+
-    `<div class="full"><details class="colordetail"><summary>詳しく指定</summary>`+
-     `<div class="cw"><input type="text" data-f="color" value="${esc(m.color)}" placeholder="空欄＝チーム色" style="flex:1"><input type="color" data-f="colorpick" value="${col}"></div>`+
-     hsvBox(col)+
-    `</details></div>`+
-    `<div class="full">${p?'<button data-act="unplace">配置解除</button>':''}<button data-act="del" class="dan">このメンバーを削除</button><button data-act="close">閉じる</button></div></div>`;
-  }
-  return h;
- }).join(''):'<div class="stat">該当するメンバーがいません。読込・書き出しメニュー、または＋1名追加で登録してください。</div>';
+ let html='';
+ if(ui.listView==='team'){
+  // チーム別：チームごとに見出し（色・名前・人数）＋メンバー
+  const groups=to.concat(['']).map(t=>[t,list.filter(x=>(x.m.team||'')===t).sort((a,b)=>(a.p?1:0)-(b.p?1:0)||a.i-b.i)]).filter(g=>g[1].length);
+  html=groups.map(([t,xs])=>{
+   const all=S.members.filter(m=>(m.team||'')===t), pl=all.filter(m=>placementOf(m.id)).length, c=teamColor(t);
+   const allSel=xs.every(x=>bulkSel.has(x.m.id));
+   return `<div class="tgroup" data-team="${esc(t)}"><div class="tgh" style="--tc:${c}">`+
+    (bulkMode?`<input type="checkbox" class="tsel"${allSel?' checked':''} title="このチームを全員選択">`:'')+
+    (t?`<button type="button" class="tcolor" data-act="tcolor" style="background:${c}" title="チーム色を変更"></button>`:'')+
+    `<span class="tname">${esc(t||'チームなし')}</span><small>${all.length}名・配置 ${pl}</small><span class="sp"></span>`+
+    (t?'<button type="button" data-act="trename">名前変更</button>':'')+
+    '</div>'+xs.map(x=>rowHTML(x.m,x.p,true)).join('')+'</div>';
+  }).join('');
+ } else html=list.map(({m,p})=>rowHTML(m,p,false)).join('');
+ rows.innerHTML=html||'<div class="stat">該当するメンバーがいません。</div>';
  rows.scrollTop=sc;
- // チーム一覧
- $('#teamBox').innerHTML=to.length?to.map(t=>{
-  const n=S.members.filter(m=>m.team===t).length;
-  return `<div class="teamrow" data-team="${esc(t)}"><input type="color" value="${teamColor(t)}"><span class="nm">${esc(t)}</span><small>${n}名</small>`+
-   (S.teamColors[t]?'<button data-act="treset">自動色に戻す</button>':'')+swatchBar(teamColor(t),'t:'+t)+hsvBox(teamColor(t))+'</div>';
- }).join(''):'<div class="stat">チームはまだありません。</div>';
- document.querySelectorAll('#rows .hsvbox,#teamBox .hsvbox').forEach(updateHsvBoxUI);
+}
+function rowHTML(m,p,inTeam){
+ const col=memberColor(m), s=sel===m.id, bs=bulkSel.has(m.id);
+ return `<div class="mrow${s?' sel':''}${p?' placed':''}" data-mid="${m.id}">`+
+  (bulkMode?`<input type="checkbox" class="bsel" data-mid="${m.id}"${bs?' checked':''}>`:`<span class="grip" title="ドラッグして配置">≡</span>`)+
+  `<span class="chip" style="background:${col};color:${textColor(col)}">${esc(shortOf(m))}</span>`+
+  `<span class="mname">${esc(m.name)}${inTeam?'':`<small>${esc(m.team)}</small>`}</span><span class="pos">${p?'配置済':'未配置'}</span>`+
+  `<button data-act="edit" title="編集">✎</button></div>`;
 }
 
 /* ============ 出力画面 ============ */
@@ -776,8 +938,8 @@ function renderOut(){
   const ms=S.members.filter(m=>(m.team||'')===t&&placementOf(m.id));
   if(ms.length) groups.push([t,ms]);
  });
- $('#legend').innerHTML=groups.map(([t,ms])=>`<div class="g"><h4><span class="chip" style="background:${teamColor(t)};color:${textColor(teamColor(t))}">${esc(t||'—')}</span>${esc(t||'チームなし')}<small>${ms.length}名</small></h4>`+
-  ms.map(m=>{const c=memberColor(m);return `<div class="it"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>→ ${esc(m.name)}</div>`;}).join('')+'</div>').join('');
+ $('#legend').innerHTML=groups.map(([t,ms])=>`<div class="g"><div class="gh" style="--tc:${teamColor(t)}">${esc(t||'チームなし')}<small>${ms.length}名</small></div>`+
+  ms.map(m=>{const c=memberColor(m);return `<div class="it"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>${esc(m.name)}</div>`;}).join('')+'</div>').join('');
  const un=S.members.filter(m=>!placementOf(m.id));
  $('#unplacedBox').innerHTML=un.length?`<div class="note" style="font-weight:400">未配置（${un.length}名）：${un.map(m=>esc(m.name)+(m.team?'（'+esc(m.team)+'）':'')).join('、')}</div>`:'';
  checkShareFresh();
@@ -859,41 +1021,73 @@ async function copyText(text){
   const ok=document.execCommand('copy'); ta.remove(); return ok;
  }catch(e){ return false; }
 }
-let shareEnc=null; // 共有ボックス作成時点の encodeState()。null は未作成。viewing 中は 'VIEW'。
-async function makeShare(){
+let shareEnc=null; // 共有欄を作成した時点の encodeState()。null は未作成。viewing 中は 'VIEW'。
+const shortCache={}; // 通常URL → 短縮URL（同じ内容で何度も発行しない）
+const ICON_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
+function makeShare(){
  shareEnc=encodeState();
- const url=shareUrlFor(shareEnc);
- showShareBox(url);
- const ok=await copyText(url);
- toast(ok?'共有URLをコピーしました':'コピーできませんでした。URLを選択して手動でコピーしてください');
+ showShareBox(shareUrlFor(shareEnc));
+}
+function urlRow(u,k){
+ return `<div class="urlrow"><input type="text" readonly value="${esc(u)}" aria-label="URL"><button type="button" class="cpbtn${k==='short'?' pri':''}" data-copy="${k}">${ICON_COPY}<span>コピー</span></button></div>`;
 }
 function showShareBox(url){
- const box=$('#shareBox'); box.hidden=false;
- $('#shareBtn').textContent='共有URL・QRコードを作成'; $('#shareBtn').classList.remove('pri');
- const canShare=!!navigator.share;
- box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div>`+
-  `<textarea class="urlbox" rows="3" readonly></textarea>`+
-  `<div class="toolbar"><button id="copyUrlBtn" class="pri">URLをコピー</button>${canShare?'<button id="shareUrlBtn">共有…</button>':''}</div>`+
-  `<div id="qrHost" style="text-align:center"></div>`;
- const ta=box.querySelector('textarea'); ta.value=url;
- const copyBtn=$('#copyUrlBtn'), origLabel=copyBtn.textContent;
- copyBtn.onclick=async()=>{
-  const ok=await copyText(url);
-  if(ok){
-   copyBtn.textContent='コピーしました ✓';
-   setTimeout(()=>{ if(copyBtn.isConnected) copyBtn.textContent=origLabel; },1500);
-  }else{
-   ta.focus(); ta.select();
-   toast('コピーできませんでした。URLを選択して手動でコピーしてください');
-  }
- };
+ const box=$('#shareBox'); box.hidden=false; $('#shareBtn').hidden=true;
+ const short=shortCache[url]||'', canShare=!!navigator.share;
+ box.innerHTML=
+  `<div class="shl">短縮URL<span class="hint">LINEなどで送るならこちら</span></div>`+
+  (short?urlRow(short,'short'):
+   `<button type="button" id="shortBtn" class="pri big">短縮URLを発行</button>`+
+   `<div class="hint" style="margin-top:4px">外部サービス（is.gd）で発行します。</div>`)+
+  `<div class="shl">通常のURL<span class="hint">${url.length.toLocaleString()}字</span></div>`+urlRow(url,'long')+
+  (url.length>2000?'<div class="hint" style="color:var(--warn);font-weight:700;margin-top:4px">2,000字を超えています。一部のアプリで途切れる可能性があるため、短縮URLがおすすめです。</div>':'')+
+  (canShare?'<button type="button" id="shareUrlBtn">LINEなどのアプリで送る…</button>':'')+
+  `<div id="qrHost"></div>`;
+ box.querySelectorAll('[data-copy]').forEach(btn=>{
+  btn.onclick=async()=>{
+   const u=btn.dataset.copy==='short'?short:url, ok=await copyText(u);
+   if(ok){
+    btn.classList.add('done'); btn.lastChild.textContent='コピー済';
+    setTimeout(()=>{ if(btn.isConnected){ btn.classList.remove('done'); btn.lastChild.textContent='コピー'; } },1500);
+   }else{
+    const inp=btn.previousElementSibling; inp.focus(); inp.select();
+    toast('コピーできませんでした。URLを選択して手動でコピーしてください');
+   }
+  };
+ });
+ const sb=$('#shortBtn'); if(sb) sb.onclick=()=>issueShort(url,sb);
  if(canShare){
   $('#shareUrlBtn').onclick=async()=>{
-   try{ await navigator.share({title:S.title||'三方配置図',url}); }
+   try{ await navigator.share({title:S.title||'三方配置図',url:short||url}); }
    catch(e){ if(e&&e.name==='AbortError') return; }
   };
  }
- renderQR(url);
+ renderQR(short||url);
+}
+// is.gd の JSONP API で短縮URLを発行（静的ページから CORS なしで呼べるため）
+function shortenUrl(url){
+ return new Promise((res,rej)=>{
+  const cb='__isgd'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  const sc=document.createElement('script'); let done=false;
+  const fin=()=>{ done=true; clearTimeout(tm); delete window[cb]; sc.remove(); };
+  window[cb]=d=>{ fin(); if(d&&d.shorturl) res(d.shorturl); else rej(new Error((d&&d.errormessage)||'error')); };
+  sc.onerror=()=>{ if(!done){ fin(); rej(new Error('network')); } };
+  const tm=setTimeout(()=>{ if(!done){ fin(); rej(new Error('timeout')); } },10000);
+  sc.src='https://is.gd/create.php?format=json&callback='+cb+'&url='+encodeURIComponent(url);
+  document.head.appendChild(sc);
+ });
+}
+async function issueShort(url,btn){
+ if(!/^https?:$/.test(location.protocol)){ toast('短縮URLは公開されたページ（https://〜）でのみ発行できます'); return; }
+ btn.disabled=true; btn.textContent='発行中…';
+ try{
+  shortCache[url]=await shortenUrl(url);
+  if(btn.isConnected) showShareBox(url);
+  toast('短縮URLを発行しました');
+ }catch(e){
+  btn.disabled=false; btn.textContent='短縮URLを発行';
+  toast('短縮URLを発行できませんでした。通常のURLをご利用ください');
+ }
 }
 function checkShareFresh(){
  const box=$('#shareBox');
@@ -903,17 +1097,18 @@ function checkShareFresh(){
  }
  if(shareEnc===null||box.hidden) return;
  if(encodeState()!==shareEnc){
-  box.hidden=true;
-  $('#shareBtn').textContent='内容が変わりました：共有URLを作り直す'; $('#shareBtn').classList.add('pri');
+  box.hidden=true; $('#shareBtn').hidden=false;
+  $('#shareBtn').textContent='内容が変わりました：共有URLを作り直す';
  }
 }
 function renderQR(url){
  const host=$('#qrHost'); if(!host) return;
  if(!window.QRCode){ host.innerHTML='<div class="qrhint">QRコードライブラリを読み込めませんでした（オフライン等）。URLのコピーをご利用ください。</div>'; return; }
- if(url.length>2800){ host.innerHTML='<div class="qrhint">URLが長すぎるためQRコードを生成できません。メンバー数を減らすか、URLのコピーをご利用ください。</div>'; return; }
+ if(url.length>2800){ host.innerHTML='<div class="qrhint">URLが長すぎるためQRコードを作れません。短縮URLを発行するとQRコードも作れます。</div>'; return; }
  try{
-  new QRCode(host,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});
-  const cap=document.createElement('div'); cap.className='qrhint'; cap.textContent='スマホのカメラなどで読み取れます';
+  new QRCode(host,{text:url,width:200,height:200,correctLevel:url.length<300?QRCode.CorrectLevel.M:QRCode.CorrectLevel.L});
+  const cap=document.createElement('div'); cap.className='qrhint';
+  cap.textContent=(shortCache[url]||Object.values(shortCache).includes(url))?'短縮URLのQRコードです。スマホのカメラで読み取れます':'スマホのカメラなどで読み取れます';
   host.appendChild(cap);
   const saveBtn=document.createElement('button'); saveBtn.style.marginTop='8px'; saveBtn.textContent='QRコードを画像で保存';
   saveBtn.onclick=()=>saveQrPng(host);
@@ -1077,7 +1272,7 @@ function endDrag(){ if(!drag) return; clearTimeout(drag.timer); if(drag.ghost) d
 
 document.addEventListener('pointerdown',e=>{
  if(viewing||mode!=='edit'||(e.pointerType==='mouse'&&e.button!==0)) return;
- if(e.target.closest('input,button,select,textarea,.edrow')) return;
+ if(e.target.closest('input,button,select,textarea,.ov')) return;
  if(drag) endDrag();
  const cell=e.target.closest('#mapHost [data-key]'), row=e.target.closest('.mrow');
  let d=null;
@@ -1217,7 +1412,7 @@ async function newDiagram(){
   b.appendChild(bk);
  }
  const ok=await dialog({title:'新しい配置図',body:b,buttons:[{t:'キャンセル',v:false},{t:'初期化する',v:true,cls:'pri dan'}]});
- if(ok){ snap(); S=defaultState(); sel=null;editingId=null; saveLS(); renderAll(); }
+ if(ok){ snap(); S=defaultState(); sel=null; saveLS(); renderAll(); }
 }
 function dataAction(act){
  if(act==='file') $('#fileIn').click();
@@ -1249,6 +1444,8 @@ $('#onboard').addEventListener('click',e=>{ const b=e.target.closest('[data-act]
 document.addEventListener('click',e=>{ if(!e.target.closest('.menuwrap')) $('#fileMenu').hidden=true; });
 $('#viewCfgBtn').onclick=$('#viewCfgBtn2').onclick=()=>{ui.cfgOpen=!ui.cfgOpen;saveUI();renderCfg();};
 $('#toOutBtn').onclick=()=>{mode='out';sel=null;renderAll();window.scrollTo(0,0);};
+$('#showUnBtn').onclick=()=>{ ui.filter='un'; ui.q=''; ui.listCollapsed=false; saveUI(); renderList(); $('#listPane').scrollIntoView({behavior:'smooth',block:'start'}); };
+document.querySelectorAll('#viewSeg button').forEach(b=>b.onclick=()=>{ui.listView=b.dataset.lv;saveUI();renderList();});
 $('#fileIn').onchange=e=>{const f=e.target.files[0]; if(f) readFile(f); e.target.value='';};
 $('#bulkModeBtn').onclick=()=>{bulkMode=!bulkMode; if(!bulkMode) bulkSel.clear(); renderList();};
 $('#bulkAllBtn').onclick=()=>{document.querySelectorAll('#rows .mrow').forEach(r=>bulkSel.add(r.dataset.mid)); renderList();};
@@ -1266,100 +1463,35 @@ $('#bulkTeamBtn').onclick=async()=>{
 };
 $('#bulkColorBtn').onclick=async()=>{
  if(!bulkSel.size){toast('メンバーを選択してください');return;}
- const el=document.createElement('div');
- el.innerHTML=`<div class="hint">選択中 ${bulkSel.size}名 のカラーをまとめて設定します（空欄でチーム色に戻す）。</div>`+
-  swatchBar('','bulk')+
-  `<div class="f"><label>カラー</label><div class="cw"><input type="text" id="bkColor" placeholder="空欄＝チーム色" style="flex:1"><input type="color" id="bkColorPick" value="#ff0000"></div></div>`+
-  hsvBox('#ff0000');
- el.querySelector('[data-swatch="bulk"]').addEventListener('click',e=>{
-  const s=e.target.closest('.swatch'); if(!s) return;
-  el.querySelector('#bkColor').value=s.dataset.color; el.querySelector('#bkColorPick').value=s.dataset.color;
- });
- el.querySelector('#bkColorPick').addEventListener('input',e=>{ el.querySelector('#bkColor').value=e.target.value; });
- const hsvRoot=el.querySelector('.hsvbox'); updateHsvBoxUI(hsvRoot);
- hsvRoot.querySelectorAll('input[type=range]').forEach(inp=>{
-  inp.addEventListener('input',()=>{
-   updateHsvBoxUI(hsvRoot);
-   const hex=readHsvBox(hsvRoot);
-   el.querySelector('#bkColor').value=hex; el.querySelector('#bkColorPick').value=hex;
-  });
- });
- const r=await dialog({title:'カラー一括変更',body:el,buttons:[{t:'キャンセル',v:false},{t:'設定',v:true,cls:'pri'}]});
- if(!r) return;
- let v=el.querySelector('#bkColor').value.trim();
- if(v&&!toHex(v)){toast('色を認識できません（例：#ff8800、orange）');return;}
- if(v) addCustomColor(v);
  const ids=[...bulkSel];
- mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.color=v; } });
- toast(`${ids.length}名のカラーを設定しました`);
+ const r=await openColorPicker({title:`${ids.length}名のカラーを変更`,current:memberColor(memberById(ids[0])),resetLabel:'チーム色に戻す'});
+ if(!r) return;
+ mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.color=r.color; } });
+ toast(r.color?`${ids.length}名のカラーを変更しました`:`${ids.length}名をチーム色に戻しました`);
 };
 $('#addBtn').onclick=()=>addMember();
 function addMember(){
  let n=1; while(S.members.some(m=>m.name==='新規'+n)) n++;
  const id=newId(); mutate(()=>{S.members.push({id,name:'新規'+n,team:'',short:'',color:''});});
- editingId=id; ui.filter='all'; ui.q=''; renderAll();
- ui.listCollapsed=false; saveUI(); renderList();
- setTimeout(()=>{const i=document.querySelector(`[data-eid="${id}"] input`); if(i){i.scrollIntoView({block:'center'});i.select();}},30);
+ ui.filter='all'; ui.q=''; ui.listCollapsed=false; saveUI(); renderList();
+ openMemberEditor(id,true);
 }
 $('#rows').addEventListener('click',e=>{
- const sw=e.target.closest('.swatch');
- if(sw){
-  const bar=sw.closest('[data-swatch]'); if(!bar) return;
-  const [kind,mid]=bar.dataset.swatch.split(':'); if(kind!=='m') return;
-  const m=memberById(mid); if(!m) return;
-  mutate(()=>{m.color=sw.dataset.color;}); return;
- }
  const btn=e.target.closest('[data-act]'); if(!btn) return;
- const row=btn.closest('[data-mid]'), ed=btn.closest('[data-eid]'); const id=row?row.dataset.mid:ed.dataset.eid;
  const act=btn.dataset.act;
- if(act==='edit'){editingId=editingId===id?null:id;renderList();}
- else if(act==='close'){editingId=null;renderList();}
- else if(act==='unplace') unplace(id);
- else if(act==='colorreset'){ const m=memberById(id); if(m) mutate(()=>{m.color='';}); }
- else if(act==='del') confirmDlg('メンバー削除','このメンバーを削除します（配置も解除されます）。','削除する',true).then(ok=>{ if(ok) mutate(()=>{S.members=S.members.filter(m=>m.id!==id);}); });
-});
-$('#rows').addEventListener('input',e=>{
- const r=e.target.closest('.hsvbox input[type=range]'); if(!r) return;
- updateHsvBoxUI(r.closest('.hsvbox'));
+ if(act==='tcolor'){ editTeamColor(btn.closest('[data-team]').dataset.team); return; }
+ if(act==='trename'){ renameTeam(btn.closest('[data-team]').dataset.team); return; }
+ if(act==='edit') openMemberEditor(btn.closest('[data-mid]').dataset.mid);
 });
 $('#rows').addEventListener('change',e=>{
- const r=e.target.closest('.hsvbox input[type=range]');
- if(r){
-  const box=r.closest('.hsvbox'), hex=readHsvBox(box);
-  const eid=box.closest('[data-eid]').dataset.eid, m=memberById(eid); if(!m) return;
-  addCustomColor(hex); mutate(()=>{m.color=hex;}); return;
- }
  if(e.target.classList.contains('bsel')){
   const id=e.target.dataset.mid; if(e.target.checked) bulkSel.add(id); else bulkSel.delete(id);
-  $('#bulkCount').textContent=`選択中 ${bulkSel.size}名`; return;
+  renderList(); return;
  }
- const f=e.target.dataset.f; if(!f) return;
- const id=e.target.closest('[data-eid]').dataset.eid, m=memberById(id); if(!m) return;
- let v=e.target.value;
- if(f==='name'){ v=normName(v); if(!v||S.members.some(x=>x.id!==id&&x.name===v)){toast(v?'同じ名前のメンバーがいます':'名前は必須です');renderList();return;} mutate(()=>{m.name=v;}); }
- else if(f==='team'){ v=normTeam(v); mutate(()=>{m.team=v;}); }
- else if(f==='short'){ mutate(()=>{m.short=v.trim();}); }
- else if(f==='color'){ v=v.trim(); if(v&&!toHex(v)){toast('色を認識できません（例：#ff8800、orange）');renderList();return;} if(v) addCustomColor(v); mutate(()=>{m.color=v;}); }
- else if(f==='colorpick'){ addCustomColor(v); mutate(()=>{m.color=v;}); }
-});
-$('#teamBox').addEventListener('input',e=>{
- const r=e.target.closest('.hsvbox input[type=range]'); if(!r) return;
- updateHsvBoxUI(r.closest('.hsvbox'));
-});
-$('#teamBox').addEventListener('change',e=>{
- const r=e.target.closest('.hsvbox input[type=range]');
- if(r){
-  const box=r.closest('.hsvbox'), hex=readHsvBox(box), t=box.closest('[data-team]').dataset.team;
-  addCustomColor(hex); mutate(()=>{S.teamColors[t]=hex;}); return;
+ if(e.target.classList.contains('tsel')){
+  e.target.closest('.tgroup').querySelectorAll('.mrow').forEach(r=>{ if(e.target.checked) bulkSel.add(r.dataset.mid); else bulkSel.delete(r.dataset.mid); });
+  renderList();
  }
- if(e.target.type!=='color') return; const t=e.target.closest('[data-team]').dataset.team; addCustomColor(e.target.value); mutate(()=>{S.teamColors[t]=e.target.value;});
-});
-$('#teamBox').addEventListener('click',e=>{
- const b=e.target.closest('[data-act="treset"]');
- if(b){ const t=b.closest('[data-team]').dataset.team; mutate(()=>{delete S.teamColors[t];}); return; }
- const sw=e.target.closest('.swatch'); if(!sw) return;
- const t=sw.closest('[data-team]').dataset.team;
- mutate(()=>{S.teamColors[t]=sw.dataset.color;});
 });
 $('#shareBtn').onclick=makeShare;
 $('#importBtn').onclick=async()=>{
@@ -1371,7 +1503,7 @@ $('#importBtn').onclick=async()=>{
   :'この共有データで、あなたの編集データを置き換えます。';
  if(!await confirmDlg('編集に取り込む',msg,'取り込む',true)) return;
  const keep=S; viewing=false; S=keep; undoStack=[];redoStack=[]; saveLS(); sel=null; mode='edit';
- shareEnc=null; $('#shareBox').hidden=true; $('#shareBtn').textContent='共有URL・QRコードを作成'; $('#shareBtn').classList.add('pri');
+ shareEnc=null; $('#shareBox').hidden=true; $('#shareBtn').hidden=false; $('#shareBtn').textContent='共有URLを作成';
  history.replaceState(null,'',location.pathname+location.search); renderAll();
 };
 window.addEventListener('hashchange',()=>location.reload());
