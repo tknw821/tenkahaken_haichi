@@ -791,7 +791,7 @@ async function makeShare(){
 }
 function showShareBox(url){
  const box=$('#shareBox'); box.hidden=false;
- $('#shareBtn').textContent='共有URL・QRコードを作成';
+ $('#shareBtn').textContent='共有URL・QRコードを作成'; $('#shareBtn').classList.remove('pri');
  const canShare=!!navigator.share;
  box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div>`+
   `<textarea class="urlbox" rows="3" readonly></textarea>`+
@@ -826,7 +826,7 @@ function checkShareFresh(){
  if(shareEnc===null||box.hidden) return;
  if(encodeState()!==shareEnc){
   box.hidden=true;
-  $('#shareBtn').textContent='内容が変わりました：共有URLを作り直す';
+  $('#shareBtn').textContent='内容が変わりました：共有URLを作り直す'; $('#shareBtn').classList.add('pri');
  }
 }
 function renderQR(url){
@@ -837,12 +837,18 @@ function renderQR(url){
   new QRCode(host,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});
   const cap=document.createElement('div'); cap.className='qrhint'; cap.textContent='スマホのカメラなどで読み取れます';
   host.appendChild(cap);
-  const saveBtn=document.createElement('button'); saveBtn.className='pri'; saveBtn.style.marginTop='8px'; saveBtn.textContent='QRコードを画像で保存';
+  const saveBtn=document.createElement('button'); saveBtn.style.marginTop='8px'; saveBtn.textContent='QRコードを画像で保存';
   saveBtn.onclick=()=>saveQrPng(host);
   host.appendChild(saveBtn);
  }catch(e){ host.innerHTML='<div class="qrhint">QRコードを生成できませんでした。URLのコピーをご利用ください。</div>'; }
 }
-async function saveQrPng(host){
+function dataUrlToBlob(dataUrl){
+ const m=/^data:(.*?);base64,(.*)$/.exec(dataUrl); if(!m) return null;
+ const bin=atob(m[2]), len=bin.length, arr=new Uint8Array(len);
+ for(let i=0;i<len;i++) arr[i]=bin.charCodeAt(i);
+ return new Blob([arr],{type:m[1]});
+}
+function saveQrPng(host){
  const src=host.querySelector('canvas'); if(!src) return;
  const pad=16;
  const c=document.createElement('canvas'); c.width=src.width+pad*2; c.height=src.height+pad*2;
@@ -851,16 +857,24 @@ async function saveQrPng(host){
  cx.drawImage(src,pad,pad);
  const safe=(S.title||'').trim().replace(/[\\/:*?"<>|]/g,'_');
  const filename=safe?`配置図QR_${safe}.png`:'配置図QR.png';
- c.toBlob(blob=>{ if(blob) saveOrShareBlob(blob,filename); },'image/png');
+ // Safari は navigator.share をユーザー操作の直後に同期的に呼ばないと拒否することがあるため、
+ // toBlob（非同期）ではなく toDataURL（同期）から Blob を作る
+ const blob=dataUrlToBlob(c.toDataURL('image/png'));
+ if(blob) saveOrShareBlob(blob,filename);
 }
-async function saveOrShareBlob(blob,filename){
- const file=new File([blob],filename,{type:blob.type||'image/png'});
- if(navigator.canShare&&navigator.canShare({files:[file]})){
-  try{ await navigator.share({files:[file]}); return; }catch(e){ if(e&&e.name==='AbortError') return; }
- }
+function downloadBlob(blob,filename){
  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename;
  document.body.appendChild(a); a.click(); a.remove();
  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function saveOrShareBlob(blob,filename){
+ const file=new File([blob],filename,{type:blob.type||'image/png'});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){
+  // await を挟まず、クリック直後に同期的に呼ぶ。拒否／失敗時は <a download> にフォールバック
+  navigator.share({files:[file]}).catch(e=>{ if(e&&e.name==='AbortError') return; downloadBlob(blob,filename); });
+  return;
+ }
+ downloadBlob(blob,filename);
 }
 
 /* ============ CSV ============ */
@@ -1261,6 +1275,7 @@ $('#shareBtn').onclick=makeShare;
 $('#importBtn').onclick=async()=>{
  if(!await confirmDlg('編集に取り込む','この共有データで、あなたの編集データを置き換えます。','取り込む',true)) return;
  const keep=S; viewing=false; S=keep; undoStack=[];redoStack=[]; saveLS(); sel=null; mode='edit';
+ shareEnc=null; $('#shareBox').hidden=true; $('#shareBtn').textContent='共有URL・QRコードを作成'; $('#shareBtn').classList.add('pri');
  history.replaceState(null,'',location.pathname+location.search); renderAll();
 };
 window.addEventListener('hashchange',()=>location.reload());
