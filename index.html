@@ -740,6 +740,7 @@ function renderOut(){
   ms.map(m=>{const c=memberColor(m);return `<div class="it"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>→ ${esc(m.name)}</div>`;}).join('')+'</div>').join('');
  const un=S.members.filter(m=>!placementOf(m.id));
  $('#unplacedBox').innerHTML=un.length?`<div class="note" style="font-weight:400">未配置（${un.length}名）：${un.map(m=>esc(m.name)+(m.team?'（'+esc(m.team)+'）':'')).join('、')}</div>`:'';
+ checkShareFresh();
 }
 
 function renderCfg(){
@@ -771,16 +772,62 @@ function decodeState(str){
  const st=sanitize({title:a[1],memo:a[2],map:{rows:a[3][0],cols:a[3][1],parity:a[3][2],disabled:a[3][3]},members,teamColors:tc,placements:pl});
  return st;
 }
+function shareUrlFor(enc){ return location.origin.replace('null','file://')+location.pathname+'#d='+enc; }
+async function copyText(text){
+ try{ await navigator.clipboard.writeText(text); return true; }catch(e){}
+ try{
+  const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  const ok=document.execCommand('copy'); ta.remove(); return ok;
+ }catch(e){ return false; }
+}
+let shareEnc=null; // 共有ボックス作成時点の encodeState()。null は未作成。viewing 中は 'VIEW'。
 async function makeShare(){
- const enc=encodeState();
- const url=location.origin.replace('null','file://')+location.pathname+'#d='+enc;
- const box=$('#shareBox'); box.hidden=false;
- box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div><textarea class="urlbox" rows="3" readonly></textarea><div id="qrHost" style="text-align:center"></div>`;
- const ta=box.querySelector('textarea'); ta.value=url;
- let ok=false; try{await navigator.clipboard.writeText(url);ok=true;}catch(e){}
- if(!ok){ ta.focus(); ta.select(); try{ok=document.execCommand('copy');}catch(e){} }
+ shareEnc=encodeState();
+ const url=shareUrlFor(shareEnc);
+ showShareBox(url);
+ const ok=await copyText(url);
  toast(ok?'共有URLをコピーしました':'コピーできませんでした。URLを選択して手動でコピーしてください');
+}
+function showShareBox(url){
+ const box=$('#shareBox'); box.hidden=false;
+ $('#shareBtn').textContent='共有URL・QRコードを作成';
+ const canShare=!!navigator.share;
+ box.innerHTML=`<div class="stat">URLの文字数：<b>${url.length.toLocaleString()}</b>字${url.length>2000?' <span style="color:var(--warn);font-weight:700">（2,000字を超えています。一部のアプリで途切れる可能性があります）</span>':''}</div>`+
+  `<textarea class="urlbox" rows="3" readonly></textarea>`+
+  `<div class="toolbar"><button id="copyUrlBtn" class="pri">URLをコピー</button>${canShare?'<button id="shareUrlBtn">共有…</button>':''}</div>`+
+  `<div id="qrHost" style="text-align:center"></div>`;
+ const ta=box.querySelector('textarea'); ta.value=url;
+ const copyBtn=$('#copyUrlBtn'), origLabel=copyBtn.textContent;
+ copyBtn.onclick=async()=>{
+  const ok=await copyText(url);
+  if(ok){
+   copyBtn.textContent='コピーしました ✓';
+   setTimeout(()=>{ if(copyBtn.isConnected) copyBtn.textContent=origLabel; },1500);
+  }else{
+   ta.focus(); ta.select();
+   toast('コピーできませんでした。URLを選択して手動でコピーしてください');
+  }
+ };
+ if(canShare){
+  $('#shareUrlBtn').onclick=async()=>{
+   try{ await navigator.share({title:S.title||'三方配置図',url}); }
+   catch(e){ if(e&&e.name==='AbortError') return; }
+  };
+ }
  renderQR(url);
+}
+function checkShareFresh(){
+ const box=$('#shareBox');
+ if(viewing){
+  if(box.hidden){ shareEnc='VIEW'; showShareBox(location.href); }
+  return;
+ }
+ if(shareEnc===null||box.hidden) return;
+ if(encodeState()!==shareEnc){
+  box.hidden=true;
+  $('#shareBtn').textContent='内容が変わりました：共有URLを作り直す';
+ }
 }
 function renderQR(url){
  const host=$('#qrHost'); if(!host) return;
@@ -790,7 +837,30 @@ function renderQR(url){
   new QRCode(host,{text:url,width:200,height:200,correctLevel:QRCode.CorrectLevel.L});
   const cap=document.createElement('div'); cap.className='qrhint'; cap.textContent='スマホのカメラなどで読み取れます';
   host.appendChild(cap);
+  const saveBtn=document.createElement('button'); saveBtn.className='pri'; saveBtn.style.marginTop='8px'; saveBtn.textContent='QRコードを画像で保存';
+  saveBtn.onclick=()=>saveQrPng(host);
+  host.appendChild(saveBtn);
  }catch(e){ host.innerHTML='<div class="qrhint">QRコードを生成できませんでした。URLのコピーをご利用ください。</div>'; }
+}
+async function saveQrPng(host){
+ const src=host.querySelector('canvas'); if(!src) return;
+ const pad=16;
+ const c=document.createElement('canvas'); c.width=src.width+pad*2; c.height=src.height+pad*2;
+ const cx=c.getContext('2d');
+ cx.fillStyle='#fff'; cx.fillRect(0,0,c.width,c.height);
+ cx.drawImage(src,pad,pad);
+ const safe=(S.title||'').trim().replace(/[\\/:*?"<>|]/g,'_');
+ const filename=safe?`配置図QR_${safe}.png`:'配置図QR.png';
+ c.toBlob(blob=>{ if(blob) saveOrShareBlob(blob,filename); },'image/png');
+}
+async function saveOrShareBlob(blob,filename){
+ const file=new File([blob],filename,{type:blob.type||'image/png'});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){
+  try{ await navigator.share({files:[file]}); return; }catch(e){ if(e&&e.name==='AbortError') return; }
+ }
+ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename;
+ document.body.appendChild(a); a.click(); a.remove();
+ setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
 
 /* ============ CSV ============ */
