@@ -56,6 +56,8 @@ svg.map .cell.hl polygon{stroke:#ff6d00;stroke-width:4}
 .bs{fill:#6b7280;text-anchor:middle;font-weight:600}
 #infoBar{margin-top:8px;padding:8px 10px;border-radius:8px;background:#f0f4ff;border:1px solid #cfdcff;min-height:38px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 #infoBar .grow{flex:1;min-width:150px}
+.ib-short{display:none}
+@media(max-width:900px){.ib-short{display:inline}}
 .side-h{font-weight:700;margin:2px 0 4px;text-align:center}
 .mrow{display:flex;align-items:center;gap:8px;padding:5px 6px;border:1px solid transparent;border-bottom-color:#eef0f3;border-radius:6px;user-select:none;-webkit-user-select:none}
 .mrow.sel{border-color:#ff6d00;background:#fff4e8}
@@ -111,6 +113,7 @@ details.card>summary{cursor:pointer;font-weight:600}
 #listHead .side-h{margin:0;text-align:left;flex:1}
 .listToggleBtn{display:none}
 #listPreview{display:none}
+.listnote{margin:-2px 0 6px}
 .hint{color:var(--sub);font-size:12px}
 .previewchip{border:2px solid transparent;cursor:pointer}
 .previewchip.placed{opacity:.55}
@@ -129,47 +132,129 @@ details.card>summary{cursor:pointer;font-weight:600}
 .qrhint{color:var(--sub);font-size:12px;margin-top:6px}
 .cplist{max-height:50vh;overflow:auto;margin-top:6px}
 .cplist .mrow{cursor:pointer}
+/* ヘッダー：保存状態・メニュー */
+.icobtn{min-width:34px}
+.savest{font-size:12px;color:#2e7d32;white-space:nowrap}
+.savest.warn{color:var(--dan);font-weight:700}
+.savest.flash{animation:svflash .8s}
+@keyframes svflash{0%{opacity:.25}100%{opacity:1}}
+.menu.right{left:auto;right:0;min-width:230px}
+.menu.right button{white-space:nowrap}
+.menu .mh{font-size:11px;color:var(--sub);padding:6px 10px 2px}
+.menu hr{border:none;border-top:1px solid var(--line);margin:4px 0}
+.menu button.dan{color:var(--dan)}
+/* 初回案内 */
+.onboard{border:2px dashed #b9c8ef;background:#f5f8ff;border-radius:10px;padding:14px;margin-bottom:10px;text-align:center}
+.ob-step{display:inline-block;background:var(--pri);color:#fff;border-radius:99px;padding:1px 10px;font-size:12px;font-weight:700;margin-bottom:4px}
+.ob-h{font-size:17px;font-weight:700}
+.ob-sub{color:var(--sub);margin:4px 0 12px}
+.ob-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+button.big{padding:10px 16px;font-weight:600;min-height:44px}
+/* 表示設定 */
+button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
+.cfgpanel{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:0 0 8px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.sidehint{margin:-4px 0 6px}
+/* 次へ */
+.nextbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
+.nextbar .grow{flex:1;min-width:160px;color:var(--sub)}
+/* 出力・共有 */
+.viewbanner{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.viewbanner .grow{flex:1;min-width:180px}
+.outgrid{display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start}
+#sharePanel{position:sticky;top:calc(var(--hdrH,52px) + 12px)}
+.sec-h{margin:0 0 6px;font-size:16px}
+.outhead{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
+.outhead .title{flex:1;min-width:0}
+#shareBtn{width:100%}
 @media(max-width:900px){
  .layout{grid-template-columns:1fr}
- #mapPane{grid-column:1;grid-row:1}
- #listPane{grid-column:1;grid-row:2}
- #mapSticky{position:sticky;top:44px;z-index:20;padding-bottom:4px;box-shadow:0 4px 8px -6px rgba(0,0,0,.4)}
- svg.map{max-height:48vh}
+ .layout{display:block}
+ /* スマホ：マップ欄の枠を外し、固定表示のマップがメンバー表のスクロール中も残るようにする */
+ #mapPane{display:contents}
+ #listPane{margin-top:10px}
+ #mapSticky{position:sticky;top:var(--hdrH,44px);z-index:20;padding-bottom:4px;box-shadow:0 4px 8px -6px rgba(0,0,0,.4)}
+ svg.map{max-height:40vh}
+ #mapSticky .side-h{font-size:13px;margin:0}
+ #infoBar{margin-top:4px;padding:6px 8px;min-height:0}
+ .ib-long{display:none}
  #rows{max-height:none}
  .pair{grid-template-columns:1fr}
  main{padding:8px}
  .listToggleBtn{display:inline-flex}
+ .outgrid{grid-template-columns:1fr}
+ #sharePanel{position:static;order:-1}
+ body.viewing #sharePanel{order:2}
  #listPane.collapsed #listBody{display:none}
  #listPane.collapsed #listPreview{display:flex;flex-wrap:wrap;gap:5px;padding:2px 0 4px}
+}
+@media(max-width:600px){
+ header#top{gap:5px;padding:6px 8px;flex-wrap:nowrap}
+ header h1{display:none}
+ body.viewing header h1{display:block;font-size:15px}
+ header#top button{font-size:13px;padding:6px 7px}
+ header#top .icobtn{min-width:32px}
+ .icobtn .lbl{display:none}
+ .tabs{flex-shrink:0}
+ .menuwrap{flex-shrink:0}
+ .savest .lbl{display:none}
+}
+@media(max-width:400px){
+ .tabs .tl{display:none}
 }
 </style>
 </head>
 <body>
 <header id="top">
  <h1>三方配置図ツール</h1>
- <div class="tabs" id="tabs"><button data-mode="edit">編集</button><button data-mode="out">出力</button></div>
+ <div class="tabs" id="tabs"><button data-mode="edit">① 配置<span class="tl">する</span></button><button data-mode="out">② <span class="tl">確認・</span>共有</button></div>
  <span class="badge" id="viewBadge" hidden>閲覧モード</span>
  <span class="sp"></span>
- <button id="undoBtn" title="元に戻す (Ctrl+Z)">↶ 戻す</button>
- <button id="redoBtn" title="やり直し (Ctrl+Y)">↷ やり直し</button>
- <button id="newBtn">新しい配置図</button>
+ <span class="savest" id="saveSt" title="編集内容はこのブラウザに自動保存されます">✓<span class="lbl"> 自動保存済み</span></span>
+ <button id="undoBtn" class="icobtn" title="元に戻す (Ctrl+Z)">↶<span class="lbl"> 戻す</span></button>
+ <button id="redoBtn" class="icobtn" title="やり直し (Ctrl+Y)">↷<span class="lbl"> やり直し</span></button>
+ <div class="menuwrap" id="fileWrap">
+  <button id="fileMenuBtn">ファイル ▾</button>
+  <div id="fileMenu" class="menu right" hidden>
+   <div class="mh">メンバー表を読み込む</div>
+   <button type="button" data-act="file">CSVファイルを開く</button>
+   <button type="button" data-act="paste">テキストを貼り付けて読込</button>
+   <div class="mh">バックアップ</div>
+   <button type="button" data-act="export">CSVで書き出し（保存）</button>
+   <hr>
+   <button type="button" data-act="clear" class="dan">全配置クリア</button>
+   <button type="button" data-act="new" class="dan">新しい配置図…</button>
+  </div>
+ </div>
 </header>
+<input type="file" id="fileIn" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
 
 <main id="editView">
  <div class="layout">
   <section id="mapPane" class="card">
+   <div id="onboard" class="onboard" hidden>
+    <div class="ob-step">STEP 1</div>
+    <div class="ob-h">まずはメンバーを登録しましょう</div>
+    <div class="ob-sub">メンバー表を読み込むと、マップのマスに配置できるようになります。</div>
+    <div class="ob-btns">
+     <button type="button" class="pri big" data-act="file">CSVファイルを読込</button>
+     <button type="button" class="big" data-act="paste">貼り付けで読込</button>
+     <button type="button" class="big" data-act="add">＋ 1名ずつ追加</button>
+    </div>
+   </div>
    <div class="toolbar">
     <input type="text" id="title" placeholder="タイトル（例：9/28 三方戦）" style="flex:1;min-width:180px">
    </div>
    <div class="toolbar">
-    <div class="seg" id="sideSeg"><button data-side="L">左陣地で編集</button><button data-side="R">右陣地で編集</button></div>
+    <div class="seg" id="sideSeg"><button data-side="L">左陣地から見る</button><button data-side="R">右陣地から見る</button></div>
+    <span class="sp"></span>
+    <button id="viewCfgBtn" class="tg" aria-expanded="false">表示設定 ▾</button>
+   </div>
+   <div class="hint sidehint">左右は見た目が反転するだけで、配置は共通です。</div>
+   <div class="cfgpanel" id="viewCfg" hidden>
     <div class="seg" id="labSeg"><button data-lab="short">表示名</button><button data-lab="team">チーム</button><button data-lab="both">表示名＋チーム</button></div>
     <label class="chk"><input type="checkbox" id="colChk">列番号</label>
     <span class="rangewrap">文字サイズ<input type="range" id="fsRange" min="0.8" max="1.8" step="0.1"></span>
-   </div>
-   <div class="toolbar">
-    <button id="mapCfgBtn">マップ設定</button>
-    <button id="clearBtn" class="dan">全配置クリア</button>
+    <button id="mapCfgBtn">マップの形を変更…</button>
    </div>
    <div id="mapSticky">
     <div class="side-h" id="sideHead"></div>
@@ -178,6 +263,10 @@ details.card>summary{cursor:pointer;font-weight:600}
    </div>
    <div class="note">中央方向が先頭（前線）です</div>
    <textarea id="memo" rows="2" placeholder="メモ（任意）"></textarea>
+   <div class="nextbar" id="nextBar">
+    <span class="grow" id="nextStat"></span>
+    <button id="toOutBtn" class="pri big">② 確認・共有へ進む →</button>
+   </div>
   </section>
 
   <aside id="listPane" class="card">
@@ -188,16 +277,8 @@ details.card>summary{cursor:pointer;font-weight:600}
    <div id="listPreview"></div>
    <div id="listBody">
    <div class="toolbar">
-    <div class="menuwrap">
-     <button id="dataMenuBtn">読込・書き出し ▾</button>
-     <div id="dataMenu" class="menu" hidden>
-      <button type="button" data-act="file">CSV読込</button>
-      <button type="button" data-act="paste">貼り付け読込</button>
-      <button type="button" data-act="export">CSV書き出し</button>
-     </div>
-    </div>
-    <input type="file" id="fileIn" accept=".csv,.tsv,.txt,text/csv,text/plain" hidden>
     <button id="addBtn">＋1名追加</button>
+    <span class="hint">CSVの読込・書き出しは上部の「ファイル」から</span>
    </div>
    <div class="stat" id="stat"></div>
    <div class="toolbar">
@@ -216,25 +297,35 @@ details.card>summary{cursor:pointer;font-weight:600}
     <button id="bulkClearBtn">選択解除</button>
    </div>
    <div id="rows"></div>
-   <details class="card" style="margin-top:10px" open><summary>チーム一覧・チーム色</summary><div id="teamBox" style="margin-top:6px"></div></details>
+   <details class="card" style="margin-top:10px"><summary>チーム一覧・チーム色</summary><div id="teamBox" style="margin-top:6px"></div></details>
    </div>
   </aside>
  </div>
 </main>
 
 <main id="outView" hidden>
- <div class="card">
-  <div class="title" id="oTitle"></div>
+ <div class="viewbanner" id="viewBanner" hidden>
+  <span class="grow">共有された配置図を表示しています。自分で編集したい場合は取り込んでください。</span>
+  <button id="importBtn" class="pri">このデータを編集に取り込む</button>
+ </div>
+ <div class="outgrid">
+ <section class="card" id="sharePanel">
+  <h3 class="sec-h">共有する</h3>
+  <p class="hint" style="margin:0 0 8px">URLを送るか、QRコードを読み取ってもらうと、相手はこの配置図を閲覧できます。</p>
+  <button id="shareBtn" class="pri big">共有URL・QRコードを作成</button>
+  <div id="shareBox" hidden></div>
+ </section>
+ <div class="card" id="outMain">
+  <div class="outhead">
+   <div class="title" id="oTitle"></div>
+   <button id="viewCfgBtn2" class="tg" aria-expanded="false">表示設定 ▾</button>
+  </div>
   <div class="memo" id="oMemo"></div>
-  <div class="toolbar">
+  <div class="cfgpanel" id="viewCfg2" hidden>
    <div class="seg" id="labSeg2"><button data-lab="short">表示名</button><button data-lab="team">チーム</button><button data-lab="both">表示名＋チーム</button></div>
    <label class="chk"><input type="checkbox" id="colChk2">列番号</label>
    <span class="rangewrap">文字サイズ<input type="range" id="fsRange2" min="0.8" max="1.8" step="0.1"></span>
-   <span class="sp"></span>
-   <button id="shareBtn" class="pri">共有URLを作成</button>
-   <button id="importBtn" class="pri" hidden>このデータを編集に取り込む</button>
   </div>
-  <div id="shareBox" hidden></div>
   <div class="note">中央方向が先頭（前線）です</div>
   <div class="pair">
    <div><div class="side-h">左陣地の場合</div><div class="mapwrap" id="mapL"></div></div>
@@ -242,6 +333,7 @@ details.card>summary{cursor:pointer;font-weight:600}
   </div>
   <div class="legend" id="legend"></div>
   <div id="unplacedBox"></div>
+ </div>
  </div>
 </main>
 
@@ -262,7 +354,7 @@ const GRAY='#9aa0a6';
 const defaultState=()=>({v:1,title:'',memo:'',map:{rows:10,cols:10,parity:0,disabled:[]},members:[],teamColors:{},placements:{}});
 let S=defaultState();
 let mode='edit', viewing=false, editSide='L', sel=null, editingId=null;
-let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:true};
+let ui={label:'short',cols:true,filter:'all',sort:'input',q:'',fontScale:1,customColors:[],listCollapsed:true,cfgOpen:false};
 let undoStack=[], redoStack=[], idSeq=0;
 let bulkMode=false, bulkSel=new Set();
 
@@ -270,7 +362,18 @@ const newId=()=>'m'+Date.now().toString(36)+(idSeq++).toString(36);
 const normTeam=s=>String(s==null?'':s).normalize('NFKC').replace(/\s+/g,' ').trim();
 const normName=s=>String(s==null?'':s).trim();
 
-function saveLS(){ if(viewing) return; try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){} }
+function saveLS(){
+ if(viewing) return;
+ let ok=true; try{localStorage.setItem(LS_KEY,JSON.stringify(S));}catch(e){ok=false;}
+ setSaveSt(ok);
+}
+function setSaveSt(ok){
+ const el=$('#saveSt'); if(!el) return;
+ el.classList.toggle('warn',!ok);
+ el.innerHTML=ok?'✓<span class="lbl"> 自動保存済み</span>':'⚠<span class="lbl"> 保存できません</span>';
+ el.title=ok?'編集内容はこのブラウザに自動保存されます':'ブラウザに保存できませんでした（プライベートモード等）。CSVで書き出してバックアップしてください';
+ el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
+}
 function saveUI(){ try{localStorage.setItem(UI_KEY,JSON.stringify(ui));}catch(e){} }
 function loadLS(){
  try{const t=localStorage.getItem(UI_KEY); if(t) Object.assign(ui,JSON.parse(t)); ui.q='';}catch(e){}
@@ -530,7 +633,9 @@ function mapSVG(mirror,o={}){
 function renderAll(){
  $('#viewBadge').hidden=!viewing;
  $('#tabs').hidden=viewing;
- $('#undoBtn').hidden=$('#redoBtn').hidden=$('#newBtn').hidden=viewing;
+ $('#undoBtn').hidden=$('#redoBtn').hidden=$('#fileWrap').hidden=$('#saveSt').hidden=viewing;
+ document.body.classList.toggle('viewing',viewing);
+ $('#viewBanner').hidden=!viewing;
  $('#undoBtn').disabled=!undoStack.length; $('#redoBtn').disabled=!redoStack.length;
  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.mode===mode));
  $('#editView').hidden=mode!=='edit'||viewing;
@@ -546,6 +651,11 @@ function renderEdit(){
  $('#colChk').checked=ui.cols;
  setRange($('#fsRange'),ui.fontScale);
  $('#sideHead').textContent=(editSide==='L'?'左陣地の場合':'右陣地の場合')+'（編集中）';
+ renderCfg();
+ const n=S.members.length, placed=Object.keys(S.placements).length;
+ $('#onboard').hidden=n>0;
+ $('#nextBar').hidden=n===0;
+ $('#nextStat').textContent=placed<n?`未配置 ${n-placed}名（未配置のままでも共有できます）`:`全員（${n}名）配置済みです`;
  $('#mapHost').innerHTML=mapSVG(editSide==='R');
  renderInfo(); renderList();
 }
@@ -557,7 +667,8 @@ function renderInfo(info){
    (placementOf(m.id)?'<button id="ibUn">配置から外す</button>':'')+'<button id="ibDs">選択解除</button>';
   const u=$('#ibUn'); if(u) u.onclick=()=>unplace(m.id);
   $('#ibDs').onclick=()=>{sel=null;renderAll();};
- } else b.innerHTML='<span class="grow">メンバー（一覧の行またはマス）をタップして選択 → マスをタップで配置。空きマスを直接タップして未配置メンバーから選ぶこともできます。ドラッグでも移動・入れ替えできます。</span>';
+ } else b.innerHTML='<span class="grow"><span class="ib-long">メンバー（一覧の行またはマス）をタップして選択 → マスをタップで配置。空きマスを直接タップして未配置メンバーから選ぶこともできます。ドラッグでも移動・入れ替えできます。</span>'+
+  '<span class="ib-short">メンバーを選び、マスをタップして配置</span></span>';
 }
 function renderList(){
  const cells=validCells().length, placed=Object.keys(S.placements).length;
@@ -617,7 +728,7 @@ function renderOut(){
  $('#colChk2').checked=ui.cols;
  setRange($('#fsRange2'),ui.fontScale);
  $('#oTitle').textContent=S.title||'（タイトル未設定）'; $('#oMemo').textContent=S.memo;
- $('#importBtn').hidden=!viewing;
+ renderCfg();
  $('#mapL').innerHTML=mapSVG(false,{static:true}); $('#mapR').innerHTML=mapSVG(true,{static:true});
  const to=teamOrder(); const groups=[];
  to.concat(['']).forEach(t=>{
@@ -628,6 +739,14 @@ function renderOut(){
   ms.map(m=>{const c=memberColor(m);return `<div class="it"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span>→ ${esc(m.name)}</div>`;}).join('')+'</div>').join('');
  const un=S.members.filter(m=>!placementOf(m.id));
  $('#unplacedBox').innerHTML=un.length?`<div class="note" style="font-weight:400">未配置（${un.length}名）：${un.map(m=>esc(m.name)+(m.team?'（'+esc(m.team)+'）':'')).join('、')}</div>`:'';
+}
+
+function renderCfg(){
+ [['#viewCfgBtn','#viewCfg'],['#viewCfgBtn2','#viewCfg2']].forEach(([b,p])=>{
+  $(p).hidden=!ui.cfgOpen; $(b).classList.toggle('on',ui.cfgOpen);
+  $(b).setAttribute('aria-expanded',ui.cfgOpen?'true':'false');
+  $(b).textContent=ui.cfgOpen?'表示設定 ▴':'表示設定 ▾';
+ });
 }
 
 /* ============ 共有URL ============ */
@@ -889,7 +1008,7 @@ document.addEventListener('click',e=>{
 });
 
 /* ============ 各種UIイベント ============ */
-document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{mode=b.dataset.mode;renderAll();});
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{ if(mode!==b.dataset.mode){mode=b.dataset.mode;renderAll();window.scrollTo(0,0);} });
 document.querySelectorAll('#sideSeg button').forEach(b=>b.onclick=()=>{editSide=b.dataset.side;renderAll();});
 document.querySelectorAll('#labSeg button,#labSeg2 button').forEach(b=>b.onclick=()=>{ui.label=b.dataset.lab;saveUI();renderAll();});
 $('#colChk').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
@@ -908,9 +1027,30 @@ $('#title').onchange=e=>{const v=e.target.value;if(v!==S.title) mutate(()=>{S.ti
 $('#memo').onchange=e=>{const v=e.target.value;if(v!==S.memo) mutate(()=>{S.memo=v;});};
 $('#undoBtn').onclick=undo; $('#redoBtn').onclick=redo;
 $('#mapCfgBtn').onclick=openMapCfg;
-$('#clearBtn').onclick=async()=>{ if(!Object.keys(S.placements).length){toast('配置されているメンバーはいません');return;}
- if(await confirmDlg('全配置クリア','配置をすべて解除します（メンバー表は残ります）。','クリアする',true)) mutate(()=>{S.placements={};}); };
-$('#newBtn').onclick=async()=>{ if(await confirmDlg('新しい配置図','編集中のデータ（メンバー表・配置・設定）をすべて初期化します。','初期化する',true)){ snap(); S=defaultState(); sel=null;editingId=null; saveLS(); renderAll(); } };
+async function clearAll(){
+ if(!Object.keys(S.placements).length){toast('配置されているメンバーはいません');return;}
+ if(await confirmDlg('全配置クリア','配置をすべて解除します（メンバー表は残ります）。<br><small>「↶ 戻す」で取り消せます。</small>','クリアする',true)) mutate(()=>{S.placements={};});
+}
+async function newDiagram(){
+ const b=document.createElement('div');
+ b.innerHTML='<div>編集中のデータ（メンバー表・配置・設定）をすべて初期化します。</div>'+
+  '<div class="stat">直後であれば「↶ 戻す」で取り消せますが、念のため先にバックアップしておくと安心です。</div>';
+ if(S.members.length){
+  const bk=document.createElement('button'); bk.type='button'; bk.textContent='先にCSVで書き出す';
+  bk.onclick=()=>{exportCSV(); bk.textContent='書き出しました ✓'; bk.disabled=true;};
+  b.appendChild(bk);
+ }
+ const ok=await dialog({title:'新しい配置図',body:b,buttons:[{t:'キャンセル',v:false},{t:'初期化する',v:true,cls:'pri dan'}]});
+ if(ok){ snap(); S=defaultState(); sel=null;editingId=null; saveLS(); renderAll(); }
+}
+function dataAction(act){
+ if(act==='file') $('#fileIn').click();
+ else if(act==='paste') openPasteDialog();
+ else if(act==='export') exportCSV();
+ else if(act==='clear') clearAll();
+ else if(act==='new') newDiagram();
+ else if(act==='add') addMember();
+}
 async function openPasteDialog(){
  const ta=document.createElement('textarea'); ta.rows=9; ta.placeholder='例）\nたろう,1組,たろ,#e57373\nはなこ,2組\nじろう';
  const b=document.createElement('div');
@@ -924,15 +1064,15 @@ async function openPasteDialog(){
  const r=await dialog({title:'貼り付け読込',body:b,buttons:[{t:'キャンセル',v:false},{t:'読込',v:true,cls:'pri'}]});
  if(r&&ta.value.trim()) importText(ta.value);
 }
-$('#dataMenuBtn').onclick=e=>{e.stopPropagation();$('#dataMenu').hidden=!$('#dataMenu').hidden;};
-$('#dataMenu').addEventListener('click',e=>{
+$('#fileMenuBtn').onclick=e=>{e.stopPropagation();$('#fileMenu').hidden=!$('#fileMenu').hidden;};
+$('#fileMenu').addEventListener('click',e=>{
  const b=e.target.closest('[data-act]'); if(!b) return;
- $('#dataMenu').hidden=true; const act=b.dataset.act;
- if(act==='file') $('#fileIn').click();
- else if(act==='paste') openPasteDialog();
- else if(act==='export') exportCSV();
+ $('#fileMenu').hidden=true; dataAction(b.dataset.act);
 });
-document.addEventListener('click',e=>{ if(!e.target.closest('.menuwrap')) $('#dataMenu').hidden=true; });
+$('#onboard').addEventListener('click',e=>{ const b=e.target.closest('[data-act]'); if(b) dataAction(b.dataset.act); });
+document.addEventListener('click',e=>{ if(!e.target.closest('.menuwrap')) $('#fileMenu').hidden=true; });
+$('#viewCfgBtn').onclick=$('#viewCfgBtn2').onclick=()=>{ui.cfgOpen=!ui.cfgOpen;saveUI();renderCfg();};
+$('#toOutBtn').onclick=()=>{mode='out';sel=null;renderAll();window.scrollTo(0,0);};
 $('#fileIn').onchange=e=>{const f=e.target.files[0]; if(f) readFile(f); e.target.value='';};
 $('#bulkModeBtn').onclick=()=>{bulkMode=!bulkMode; if(!bulkMode) bulkSel.clear(); renderList();};
 $('#bulkAllBtn').onclick=()=>{document.querySelectorAll('#rows .mrow').forEach(r=>bulkSel.add(r.dataset.mid)); renderList();};
@@ -977,12 +1117,14 @@ $('#bulkColorBtn').onclick=async()=>{
  mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.color=v; } });
  toast(`${ids.length}名のカラーを設定しました`);
 };
-$('#addBtn').onclick=()=>{
+$('#addBtn').onclick=()=>addMember();
+function addMember(){
  let n=1; while(S.members.some(m=>m.name==='新規'+n)) n++;
  const id=newId(); mutate(()=>{S.members.push({id,name:'新規'+n,team:'',short:'',color:''});});
  editingId=id; ui.filter='all'; ui.q=''; renderAll();
- setTimeout(()=>{const i=document.querySelector(`[data-eid="${id}"] input`); if(i){i.scrollIntoView({block:'nearest'});i.select();}},30);
-};
+ ui.listCollapsed=false; saveUI(); renderList();
+ setTimeout(()=>{const i=document.querySelector(`[data-eid="${id}"] input`); if(i){i.scrollIntoView({block:'center'});i.select();}},30);
+}
 $('#rows').addEventListener('click',e=>{
  const sw=e.target.closest('.swatch');
  if(sw){
@@ -1049,6 +1191,12 @@ $('#importBtn').onclick=async()=>{
  history.replaceState(null,'',location.pathname+location.search); renderAll();
 };
 window.addEventListener('hashchange',()=>location.reload());
+
+/* ヘッダーの実高さを固定表示位置に反映（折り返し対策） */
+(function(){
+ const h=$('#top'), set=()=>document.documentElement.style.setProperty('--hdrH',h.offsetHeight+'px');
+ set(); if(window.ResizeObserver) new ResizeObserver(set).observe(h); else window.addEventListener('resize',set);
+})();
 
 /* ============ 起動 ============ */
 (function init(){
