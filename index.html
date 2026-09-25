@@ -174,7 +174,7 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
 #shortBtn{width:100%}
 .shl .hint.over{color:var(--dan);font-weight:700}
 .shortfb{margin-top:8px;padding:8px 10px;border:1px solid #f3c7c7;background:#fff7f7;border-radius:8px;display:flex;flex-direction:column;gap:6px}
-.btnlink{display:block;text-align:center;border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 10px;color:var(--pri);font-weight:600;text-decoration:none}
+.btnlink{display:block;width:100%;text-align:center;border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 10px;color:var(--pri);font-weight:600;text-decoration:none}
 #shareUrlBtn{width:100%;margin-top:10px}
 #qrHost{text-align:center;margin-top:14px}
 #qrHost canvas,#qrHost img{margin:0 auto}
@@ -269,6 +269,7 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
    <button type="button" data-act="paste">テキストを貼り付けて読込</button>
    <div class="mh">バックアップ</div>
    <button type="button" data-act="export">CSVで書き出し（保存）</button>
+   <button type="button" data-act="text">テキストで書き出し（コピー用）</button>
    <hr>
    <button type="button" data-act="clear" class="dan">全配置クリア</button>
    <button type="button" data-act="new" class="dan">新しい配置図…</button>
@@ -1044,7 +1045,7 @@ function showShareBox(url){
   `<div class="shl">短縮URL<span class="hint">LINEなどで送るならこちら</span></div>`+
   (short?urlRow(short,'short'):
    `<button type="button" id="shortBtn" class="pri big">短縮URLを発行</button>`+
-   `<div class="hint" style="margin-top:4px">外部サービス（is.gd）で発行します。</div><div id="shortFb" class="shortfb" hidden></div>`)+
+   `<div class="hint" style="margin-top:4px">外部サービス（x.gd）で発行します。</div><div id="shortFb" class="shortfb" hidden></div>`)+
   `<div class="shl">通常のURL<span class="hint${url.length>100?' over':''}">${url.length.toLocaleString()}字</span></div>`+urlRow(url,'long')+
   (url.length>2000?'<div class="hint" style="color:var(--warn);font-weight:700;margin-top:4px">2,000字を超えています。一部のアプリで途切れる可能性があるため、短縮URLがおすすめです。</div>':'')+
   (canShare?'<button type="button" id="shareUrlBtn">LINEなどのアプリで送る…</button>':'')+
@@ -1070,30 +1071,15 @@ function showShareBox(url){
  }
  renderQR(short||url);
 }
-// is.gd の API で短縮URLを発行。まず通常の通信（fetch）、だめなら JSONP を試す
-const ISGD='https://is.gd/create.php';
+// x.gd の API で短縮URLを発行（キーはサイト共通。利用者ごとの登録は不要）
+const XGD_API='https://xgd.io/V1/shorten', XGD_KEY='d4ffbbe12b152fa65047b04e30bfc4ee';
 async function shortenUrl(url){
- let err;
- try{
-  const r=await fetch(ISGD+'?format=json&url='+encodeURIComponent(url),{mode:'cors'});
-  const d=await r.json();
-  if(d&&d.shorturl) return d.shorturl;
-  err=new Error((d&&d.errormessage)||'error'); err.fromApi=true;
- }catch(e){ err=e; }
- if(err.fromApi) throw err; // is.gd がURLを拒否した場合は JSONP でも同じ結果になる
- return shortenJsonp(url);
-}
-function shortenJsonp(url){
- return new Promise((res,rej)=>{
-  const cb='__isgd'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
-  const sc=document.createElement('script'); let done=false;
-  const fin=()=>{ done=true; clearTimeout(tm); delete window[cb]; sc.remove(); };
-  window[cb]=d=>{ fin(); if(d&&d.shorturl) res(d.shorturl); else rej(new Error((d&&d.errormessage)||'error')); };
-  sc.onerror=()=>{ if(!done){ fin(); rej(new Error('通信がブロックされました')); } };
-  const tm=setTimeout(()=>{ if(!done){ fin(); rej(new Error('応答がありません')); } },10000);
-  sc.src=ISGD+'?format=json&callback='+cb+'&url='+encodeURIComponent(url);
-  document.head.appendChild(sc);
- });
+ let r;
+ try{ r=await fetch(XGD_API+'?url='+encodeURIComponent(url)+'&key='+XGD_KEY); }
+ catch(e){ throw new Error('通信がブロックされました'); }
+ let d=null; try{ d=await r.json(); }catch(e){}
+ if(d&&d.shorturl&&(d.status==null||d.status===200)) return d.shorturl;
+ throw new Error((d&&d.message)||('エラー '+r.status));
 }
 async function issueShort(url,btn){
  if(!/^https?:$/.test(location.protocol)){ toast('短縮URLは公開されたページ（https://〜）でのみ発行できます'); return; }
@@ -1108,14 +1094,18 @@ async function issueShort(url,btn){
   showShortFallback(url,e&&e.message);
  }
 }
-// 自動発行できなかったとき：is.gd のページで発行 → 貼り付けて使う
+// 自動発行できなかったとき：URLをコピーして x.gd を開く → 発行した短縮URLを貼り付けて使う
 function showShortFallback(url,reason){
  const fb=$('#shortFb'); if(!fb) return;
  fb.hidden=false;
  fb.innerHTML=`<div class="hint" style="color:var(--dan)">自動で発行できませんでした${reason?'（'+esc(reason)+'）':''}。</div>`+
-  `<div class="hint">下のボタンで is.gd のページを開き、表示された短縮URLをコピーして貼り付けてください。</div>`+
-  `<a class="btnlink" href="${esc(ISGD+'?url='+encodeURIComponent(url))}" target="_blank" rel="noopener">is.gd のページで発行 ↗</a>`+
-  `<div class="urlrow" style="margin-top:6px"><input type="url" id="shortPaste" placeholder="https://is.gd/…" aria-label="短縮URLを貼り付け"><button type="button" id="shortUse" class="pri">使う</button></div>`;
+  `<div class="hint">① 下のボタンでURLをコピーして x.gd を開く → ② x.gd に貼り付けて短縮 → ③ 短縮URLをここに貼り付けて「使う」</div>`+
+  `<button type="button" id="xgdOpen" class="btnlink">① URLをコピーして x.gd を開く ↗</button>`+
+  `<div class="urlrow"><input type="url" id="shortPaste" placeholder="https://x.gd/…" aria-label="短縮URLを貼り付け"><button type="button" id="shortUse" class="pri">使う</button></div>`;
+ $('#xgdOpen').onclick=()=>{
+  window.open('https://x.gd/','_blank','noopener'); // ポップアップ扱いされないよう、タップ直後に開く
+  copyText(url).then(ok=>toast(ok?'URLをコピーしました。x.gd に貼り付けてください':'コピーできませんでした。「通常のURL」欄からコピーしてください'));
+ };
  $('#shortUse').onclick=()=>{
   const v=$('#shortPaste').value.trim();
   if(!/^https:\/\/\S+$/.test(v)){ toast('https:// で始まる短縮URLを貼り付けてください'); return; }
@@ -1253,14 +1243,33 @@ async function importText(text){
  });
  toast(`${entries.length}名を読み込みました`+(dups?`（重複${dups}件を統合）`:''));
 }
+async function exportText(){
+ if(!S.members.length){ toast('メンバーが登録されていません'); return; }
+ const text=memberTable(false).join('\n');
+ const b=document.createElement('div');
+ b.innerHTML='<div class="hint">全文をコピーしてメモ帳などで編集できます。編集後は［ファイル］→［テキストを貼り付けて読込］で読み込めます（配置も復元されます）。</div>';
+ const ta=document.createElement('textarea'); ta.rows=12; ta.readOnly=true; ta.value=text; ta.style.marginTop='8px'; ta.style.fontSize='13px';
+ b.appendChild(ta);
+ const bar=document.createElement('div'); bar.className='toolbar';
+ const cp=document.createElement('button'); cp.type='button'; cp.className='pri'; cp.textContent='全文をコピー';
+ cp.onclick=async()=>{ if(await copyText(text)){ cp.textContent='コピーしました ✓'; setTimeout(()=>{cp.textContent='全文をコピー';},1500); } else { ta.focus(); ta.select(); toast('コピーできませんでした。テキストを選択してコピーしてください'); } };
+ const sv=document.createElement('button'); sv.type='button'; sv.textContent='.txt で保存';
+ sv.onclick=()=>downloadBlob(new Blob([text.replace(/\n/g,'\r\n')],{type:'text/plain;charset=utf-8'}),csvFilename().replace(/\.csv$/,'.txt'));
+ bar.append(cp,sv); b.appendChild(bar);
+ await dialog({title:'テキストで書き出し',body:b,buttons:[{t:'閉じる',v:true}]});
+}
 function csvFilename(){
  const d=new Date(), ymd=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
  const safe=(S.title||'').trim().replace(/[\\/:*?"<>|]/g,'_');
  return safe?`三方配置図_${safe}_${ymd}.csv`:`三方配置図_${ymd}.csv`;
 }
+function memberTable(quoteAll){
+ // quoteAll=false のときは、区切り文字などを含む項目だけ "" で囲む（メモ帳で読みやすくするため）
+ const q=v=>{ v=String(v); return (quoteAll||/[",\n、，。\t]/.test(v))?'"'+v.replace(/"/g,'""')+'"':v; };
+ return ['メンバー名,チーム,表示名,カラー,配置'].concat(S.members.map(m=>[m.name,m.team,m.short,m.color,placementOf(m.id)||''].map(q).join(',')));
+}
 function exportCSV(){
- const q=s=>'"'+String(s).replace(/"/g,'""')+'"';
- const lines=['メンバー名,チーム,表示名,カラー,配置'].concat(S.members.map(m=>[q(m.name),q(m.team),q(m.short),q(m.color),q(placementOf(m.id)||'')].join(',')));
+ const lines=memberTable(true);
  const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=csvFilename(); document.body.appendChild(a); a.click();
  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500);
@@ -1451,6 +1460,7 @@ function dataAction(act){
  if(act==='file') $('#fileIn').click();
  else if(act==='paste') openPasteDialog();
  else if(act==='export') exportCSV();
+ else if(act==='text') exportText();
  else if(act==='clear') clearAll();
  else if(act==='new') newDiagram();
  else if(act==='add') addMember();
@@ -1460,7 +1470,7 @@ async function openPasteDialog(){
  const b=document.createElement('div');
  b.innerHTML='<div class="stat">'+
   '1行につき1名、区切り文字（<b>, ／ ， ／ 、 ／ 。</b> のいずれか。表計算ソフトからのコピーはタブ区切りを自動で認識）で区切って入力します。区切り文字の前後の空白は無視されます。<br>'+
-  '列の順番：<b>① メンバー名（必須）→ ② チーム → ③ 表示名 → ④ カラー</b>。②〜④は省略できます。<br>'+
+  '列の順番：<b>① メンバー名（必須）→ ② チーム → ③ 表示名 → ④ カラー → ⑤ 配置</b>。②〜⑤は省略できます。<br>'+
   '例：たろう,1組,たろ,#e57373<br>'+
   '先頭行に「メンバー名」「チーム」などの見出しが含まれている場合は、その行を自動で見出しと判定して読み飛ばします。'+
   '</div>';
