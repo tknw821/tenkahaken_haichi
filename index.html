@@ -17,7 +17,7 @@ button.pri{background:var(--pri);border-color:var(--pri);color:#fff}
 button.pri:hover{background:#1a5fd0}
 button.dan{color:var(--dan)}
 button:disabled{opacity:.4;cursor:default}
-input[type=text],input[type=number],select,textarea{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:#fff;min-width:0}
+input[type=text],input[type=url],input[type=number],select,textarea{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:#fff;min-width:0}
 textarea{width:100%;resize:vertical}
 header#top{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 12px}
 header h1{font-size:16px;margin:0 8px 0 0}
@@ -57,6 +57,8 @@ svg.map .cell.hl polygon{stroke:#ff6d00;stroke-width:4}
 .bs{fill:#6b7280;text-anchor:middle;font-weight:600}
 #infoBar{margin-top:8px;padding:8px 10px;border-radius:8px;background:#f0f4ff;border:1px solid #cfdcff;min-height:38px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 #infoBar .grow{flex:1;min-width:150px}
+.ibsel{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;cursor:pointer}
+.ibsel input{width:22px;height:22px;margin:0;accent-color:#ff6d00;cursor:pointer}
 .ib-short{display:none}
 @media(max-width:900px){.ib-short{display:inline}}
 .side-h{font-weight:700;margin:2px 0 4px;text-align:center}
@@ -170,6 +172,9 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
 .cpbtn svg{width:16px;height:16px;flex-shrink:0}
 button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
 #shortBtn{width:100%}
+.shl .hint.over{color:var(--dan);font-weight:700}
+.shortfb{margin-top:8px;padding:8px 10px;border:1px solid #f3c7c7;background:#fff7f7;border-radius:8px;display:flex;flex-direction:column;gap:6px}
+.btnlink{display:block;text-align:center;border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 10px;color:var(--pri);font-weight:600;text-decoration:none}
 #shareUrlBtn{width:100%;margin-top:10px}
 #qrHost{text-align:center;margin-top:14px}
 #qrHost canvas,#qrHost img{margin:0 auto}
@@ -862,11 +867,12 @@ function renderEdit(){
 function renderInfo(info){
  const b=$('#infoBar'); const m=sel&&memberById(sel);
  if(m){
-  b.innerHTML=`<span class="chip" style="background:${memberColor(m)};color:${textColor(memberColor(m))}">${esc(shortOf(m))}</span>`+
-   `<span class="grow"><b>${esc(m.name)}</b> ／ チーム：${esc(m.team||'なし')} ／ 表示名：${esc(shortOf(m))}<br><small>配置したいマスをタップ</small></span>`+
-   (placementOf(m.id)?'<button id="ibUn">配置から外す</button>':'')+'<button id="ibDs">選択解除</button>';
+  b.innerHTML=`<label class="ibsel" title="チェックを外すと選択解除"><input type="checkbox" id="ibSel" checked></label>`+
+   `<span class="chip" style="background:${memberColor(m)};color:${textColor(memberColor(m))}">${esc(shortOf(m))}</span>`+
+   `<span class="grow"><b>${esc(m.name)}</b><span class="ib-long"> ／ チーム：${esc(m.team||'なし')} ／ 表示名：${esc(shortOf(m))}</span><br><small>配置したいマスをタップ（チェックを外すと選択解除）</small></span>`+
+   (placementOf(m.id)?'<button id="ibUn">配置から外す</button>':'');
   const u=$('#ibUn'); if(u) u.onclick=()=>unplace(m.id);
-  $('#ibDs').onclick=()=>{sel=null;renderAll();};
+  $('#ibSel').onchange=()=>{sel=null;renderAll();};
  } else b.innerHTML='<span class="grow"><span class="ib-long">メンバー（一覧の行またはマス）をタップして選択 → マスをタップで配置。空きマスを直接タップして未配置メンバーから選ぶこともできます。ドラッグでも移動・入れ替えできます。</span>'+
   '<span class="ib-short">メンバーを選び、マスをタップして配置</span></span>';
 }
@@ -1038,8 +1044,8 @@ function showShareBox(url){
   `<div class="shl">短縮URL<span class="hint">LINEなどで送るならこちら</span></div>`+
   (short?urlRow(short,'short'):
    `<button type="button" id="shortBtn" class="pri big">短縮URLを発行</button>`+
-   `<div class="hint" style="margin-top:4px">外部サービス（is.gd）で発行します。</div>`)+
-  `<div class="shl">通常のURL<span class="hint">${url.length.toLocaleString()}字</span></div>`+urlRow(url,'long')+
+   `<div class="hint" style="margin-top:4px">外部サービス（is.gd）で発行します。</div><div id="shortFb" class="shortfb" hidden></div>`)+
+  `<div class="shl">通常のURL<span class="hint${url.length>100?' over':''}">${url.length.toLocaleString()}字</span></div>`+urlRow(url,'long')+
   (url.length>2000?'<div class="hint" style="color:var(--warn);font-weight:700;margin-top:4px">2,000字を超えています。一部のアプリで途切れる可能性があるため、短縮URLがおすすめです。</div>':'')+
   (canShare?'<button type="button" id="shareUrlBtn">LINEなどのアプリで送る…</button>':'')+
   `<div id="qrHost"></div>`;
@@ -1064,16 +1070,28 @@ function showShareBox(url){
  }
  renderQR(short||url);
 }
-// is.gd の JSONP API で短縮URLを発行（静的ページから CORS なしで呼べるため）
-function shortenUrl(url){
+// is.gd の API で短縮URLを発行。まず通常の通信（fetch）、だめなら JSONP を試す
+const ISGD='https://is.gd/create.php';
+async function shortenUrl(url){
+ let err;
+ try{
+  const r=await fetch(ISGD+'?format=json&url='+encodeURIComponent(url),{mode:'cors'});
+  const d=await r.json();
+  if(d&&d.shorturl) return d.shorturl;
+  err=new Error((d&&d.errormessage)||'error'); err.fromApi=true;
+ }catch(e){ err=e; }
+ if(err.fromApi) throw err; // is.gd がURLを拒否した場合は JSONP でも同じ結果になる
+ return shortenJsonp(url);
+}
+function shortenJsonp(url){
  return new Promise((res,rej)=>{
   const cb='__isgd'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
   const sc=document.createElement('script'); let done=false;
   const fin=()=>{ done=true; clearTimeout(tm); delete window[cb]; sc.remove(); };
   window[cb]=d=>{ fin(); if(d&&d.shorturl) res(d.shorturl); else rej(new Error((d&&d.errormessage)||'error')); };
-  sc.onerror=()=>{ if(!done){ fin(); rej(new Error('network')); } };
-  const tm=setTimeout(()=>{ if(!done){ fin(); rej(new Error('timeout')); } },10000);
-  sc.src='https://is.gd/create.php?format=json&callback='+cb+'&url='+encodeURIComponent(url);
+  sc.onerror=()=>{ if(!done){ fin(); rej(new Error('通信がブロックされました')); } };
+  const tm=setTimeout(()=>{ if(!done){ fin(); rej(new Error('応答がありません')); } },10000);
+  sc.src=ISGD+'?format=json&callback='+cb+'&url='+encodeURIComponent(url);
   document.head.appendChild(sc);
  });
 }
@@ -1085,9 +1103,24 @@ async function issueShort(url,btn){
   if(btn.isConnected) showShareBox(url);
   toast('短縮URLを発行しました');
  }catch(e){
-  btn.disabled=false; btn.textContent='短縮URLを発行';
-  toast('短縮URLを発行できませんでした。通常のURLをご利用ください');
+  if(!btn.isConnected) return;
+  btn.disabled=false; btn.textContent='もう一度試す';
+  showShortFallback(url,e&&e.message);
  }
+}
+// 自動発行できなかったとき：is.gd のページで発行 → 貼り付けて使う
+function showShortFallback(url,reason){
+ const fb=$('#shortFb'); if(!fb) return;
+ fb.hidden=false;
+ fb.innerHTML=`<div class="hint" style="color:var(--dan)">自動で発行できませんでした${reason?'（'+esc(reason)+'）':''}。</div>`+
+  `<div class="hint">下のボタンで is.gd のページを開き、表示された短縮URLをコピーして貼り付けてください。</div>`+
+  `<a class="btnlink" href="${esc(ISGD+'?url='+encodeURIComponent(url))}" target="_blank" rel="noopener">is.gd のページで発行 ↗</a>`+
+  `<div class="urlrow" style="margin-top:6px"><input type="url" id="shortPaste" placeholder="https://is.gd/…" aria-label="短縮URLを貼り付け"><button type="button" id="shortUse" class="pri">使う</button></div>`;
+ $('#shortUse').onclick=()=>{
+  const v=$('#shortPaste').value.trim();
+  if(!/^https:\/\/\S+$/.test(v)){ toast('https:// で始まる短縮URLを貼り付けてください'); return; }
+  shortCache[url]=v; showShareBox(url); toast('短縮URLを設定しました');
+ };
 }
 function checkShareFresh(){
  const box=$('#shareBox');
@@ -1316,14 +1349,14 @@ document.addEventListener('pointerup',e=>{
  tap(d);
 });
 function tap(d){
- if(d.kind==='blank'){ if(sel){sel=null;renderAll();} return; }
+ if(d.kind==='blank') return; // ミスタップで選択が外れないよう、余白のタップでは解除しない
  if(d.kind==='row'){
   if(bulkMode){ if(bulkSel.has(d.mid)) bulkSel.delete(d.mid); else bulkSel.add(d.mid); renderList(); return; }
-  sel=(sel===d.mid)?null:d.mid; renderAll(); return;
+  if(sel!==d.mid){ sel=d.mid; renderAll(); } return;
  }
  // cell
  if(sel){
-  if(S.placements[d.key]===sel){ sel=null; renderAll(); return; }
+  if(S.placements[d.key]===sel) return;
   const id=sel; sel=null; place(id,d.key); return;
  }
  if(d.mid){ sel=d.mid; renderAll(); return; }
@@ -1389,7 +1422,7 @@ $('#fsRange2').oninput=e=>{ui.fontScale=+e.target.value;saveUI();renderAll();};
 $('#listToggle').onclick=()=>{ui.listCollapsed=!ui.listCollapsed;saveUI();renderList();};
 $('#listPreview').addEventListener('click',e=>{
  const b=e.target.closest('[data-mid]'); if(!b) return;
- const id=b.dataset.mid; sel=(sel===id)?null:id; renderAll();
+ if(sel!==b.dataset.mid){ sel=b.dataset.mid; renderAll(); }
 });
 document.querySelectorAll('#filSeg button').forEach(b=>b.onclick=()=>{ui.filter=b.dataset.fil;saveUI();renderList();});
 $('#sortSel').onchange=e=>{ui.sort=e.target.value;saveUI();renderList();};
