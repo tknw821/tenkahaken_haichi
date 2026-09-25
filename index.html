@@ -173,6 +173,8 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
 button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
 #shortBtn{width:100%}
 .shl .hint.over{color:var(--dan);font-weight:700}
+.shl .rec{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;border-radius:99px;padding:0 8px;font-size:11px;font-weight:700}
+.qrtoggle{width:100%;margin-top:10px;color:var(--sub)}
 .shortfb{margin-top:8px;padding:8px 10px;border:1px solid #f3c7c7;background:#fff7f7;border-radius:8px;display:flex;flex-direction:column;gap:6px}
 .btnlink{display:block;width:100%;text-align:center;border:1px solid var(--line);background:#fff;border-radius:6px;padding:9px 10px;color:var(--pri);font-weight:600;text-decoration:none}
 #shareUrlBtn{width:100%;margin-top:10px}
@@ -1029,7 +1031,8 @@ async function copyText(text){
  }catch(e){ return false; }
 }
 let shareEnc=null; // 共有欄を作成した時点の encodeState()。null は未作成。viewing 中は 'VIEW'。
-const shortCache={}; // 通常URL → 短縮URL（同じ内容で何度も発行しない）
+const shortCache={};
+let qrOpen=false; // 共有欄のQRコードを表示中か // 通常URL → 短縮URL（同じ内容で何度も発行しない）
 const ICON_COPY='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>';
 function makeShare(){
  shareEnc=encodeState();
@@ -1042,14 +1045,15 @@ function showShareBox(url){
  const box=$('#shareBox'); box.hidden=false; $('#shareBtn').hidden=true;
  const short=shortCache[url]||'', canShare=!!navigator.share;
  box.innerHTML=
-  `<div class="shl">短縮URL<span class="hint">LINEなどで送るならこちら</span></div>`+
+  `<div class="shl">短縮URL<span class="rec">推奨</span><span class="hint">LINEなどで送るならこちら</span></div>`+
   (short?urlRow(short,'short'):
    `<button type="button" id="shortBtn" class="pri big">短縮URLを発行</button>`+
    `<div class="hint" style="margin-top:4px">外部サービス（x.gd）で発行します。</div><div id="shortFb" class="shortfb" hidden></div>`)+
   `<div class="shl">通常のURL<span class="hint${url.length>100?' over':''}">${url.length.toLocaleString()}字</span></div>`+urlRow(url,'long')+
   (url.length>2000?'<div class="hint" style="color:var(--warn);font-weight:700;margin-top:4px">2,000字を超えています。一部のアプリで途切れる可能性があるため、短縮URLがおすすめです。</div>':'')+
   (canShare?'<button type="button" id="shareUrlBtn">LINEなどのアプリで送る…</button>':'')+
-  `<div id="qrHost"></div>`;
+  `<button type="button" id="qrToggle" class="qrtoggle">${qrOpen?'QRコードを閉じる ▴':'QRコードを表示 ▾'}</button>`+
+  `<div id="qrHost"${qrOpen?'':' hidden'}></div>`;
  box.querySelectorAll('[data-copy]').forEach(btn=>{
   btn.onclick=async()=>{
    const u=btn.dataset.copy==='short'?short:url, ok=await copyText(u);
@@ -1069,7 +1073,8 @@ function showShareBox(url){
    catch(e){ if(e&&e.name==='AbortError') return; }
   };
  }
- renderQR(short||url);
+ $('#qrToggle').onclick=()=>{ qrOpen=!qrOpen; showShareBox(url); };
+ if(qrOpen) renderQR(short||url); // QRは必要なときだけ表示（初期は折りたたみ）
 }
 // x.gd の API で短縮URLを発行（キーはサイト共通。利用者ごとの登録は不要）
 const XGD_API='https://xgd.io/V1/shorten', XGD_KEY='d4ffbbe12b152fa65047b04e30bfc4ee';
