@@ -230,6 +230,15 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
 .me-color{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .colorbtn{display:inline-flex;align-items:center;gap:8px}
 .dlg .f input[type=text]{width:100%}
+/* チーム名の候補 */
+.tsug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:150px;overflow:auto}
+.tsug-i{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:99px;max-width:100%}
+.tsug-i.on{border-color:var(--pri);background:var(--pri2);color:var(--pri);font-weight:600}
+.tsug-i .sw{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+.tsug-i small{color:var(--sub)}
+.tsug .hint{padding:4px 2px}
+.dlg .f:has(.tsug){align-items:start}
+.dlg .f:has(.tsug)>label{padding-top:7px}
 .dbtn .sp{flex:1}
 @media(max-width:900px){
  .layout{grid-template-columns:1fr}
@@ -371,7 +380,6 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
    <div class="bulkbar" id="bulkBar" hidden>
     <span id="bulkCount">選択中 0名</span>
     <button id="bulkTeamBtn">チームを変更</button>
-    <button id="bulkColorBtn">カラーを変更</button>
     <button id="bulkAllBtn">全選択</button>
     <button id="bulkClearBtn">選択解除</button>
    </div>
@@ -721,13 +729,13 @@ function openMemberEditor(id,focusName){
   const col=memberColor(m), p=placementOf(m.id);
   body.innerHTML=
    `<div class="f"><label>メンバー名</label><input type="text" data-f="name" value="${esc(m.name)}"></div>`+
-   `<div class="f"><label>チーム</label><input type="text" data-f="team" value="${esc(m.team)}" placeholder="（任意）" list="meTeams"></div>`+
-   `<datalist id="meTeams">${teamOrder().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`+
+   `<div class="f"><label>チーム</label><div><input type="text" data-f="team" value="${esc(m.team)}" placeholder="（任意）入力すると候補を表示" autocomplete="off"></div></div>`+
    `<div class="f"><label>表示名</label><input type="text" data-f="short" value="${esc(m.short)}" placeholder="${esc(defShort(m.name))}（自動）"></div>`+
    `<div class="f"><label>カラー</label><div class="me-color"><button type="button" class="colorbtn" data-b="color"><span class="chip" style="background:${col};color:${textColor(col)}">${esc(shortOf(m))}</span>色を選ぶ…</button>`+
     (m.color?'<button type="button" class="linkbtn" data-b="creset">チーム色に戻す</button>':'<span class="hint">チーム色</span>')+'</div></div>'+
    '<div class="hint" style="margin-top:4px">メンバー名以外は空欄のままで構いません。</div>'+
    `<div class="dbtn">${p?'<button type="button" data-b="unplace">配置から外す</button>':''}<button type="button" class="dan" data-b="del">削除</button><span class="sp"></span><button type="button" class="pri" data-b="close">閉じる</button></div>`;
+ attachTeamSuggest(body.querySelector('[data-f="team"]'));
  }
  draw();
  body.addEventListener('change',e=>{
@@ -753,6 +761,31 @@ function openMemberEditor(id,focusName){
  });
  if(focusName){ const i=body.querySelector('[data-f="name"]'); i.focus(); i.select(); }
 }
+// チーム名入力欄の下に、入力内容に合う既存チームの候補を出す。候補をタップすると入力欄に入る
+function attachTeamSuggest(inp,{always=false,none=false}={}){
+ const box=document.createElement('div'); box.className='tsug'; box.hidden=!always; inp.after(box);
+ let typed=false, picked=false; // 入力を始めるまでは全チームを表示し、今のチーム（選んだチーム）を強調する
+ const draw=()=>{
+  const v=normTeam(inp.value), q=typed?v.normalize('NFKC').toLowerCase():'';
+  const list=teamOrder().filter(t=>!q||t.normalize('NFKC').toLowerCase().includes(q));
+  box.innerHTML=(none?`<button type="button" class="tsug-i${(typed||picked)&&v===''?' on':''}" data-t="">（チームなし）</button>`:'')+
+   list.map(t=>`<button type="button" class="tsug-i${t===v?' on':''}" data-t="${esc(t)}"><span class="sw" style="background:${teamColor(t)}"></span>${esc(t)}<small>${S.members.filter(m=>m.team===t).length}名</small></button>`).join('')+
+   (v&&!teamOrder().includes(v)?`<span class="hint">新しいチーム「${esc(v)}」になります</span>`:'')+
+   (!list.length&&!v&&!none?'<span class="hint">まだチームがありません</span>':'');
+ };
+ draw();
+ inp.addEventListener('input',()=>{ typed=true; draw(); });
+ inp.addEventListener('focus',()=>{ typed=false; draw(); box.hidden=false; });
+ if(!always) inp.addEventListener('blur',()=>setTimeout(()=>{ if(document.activeElement!==inp) box.hidden=true; },150));
+ // pointerdown で確定（入力欄のフォーカスを外さず、途中の文字で確定されないようにする）
+ box.addEventListener('pointerdown',e=>{
+  const b=e.target.closest('[data-t]'); if(!b) return;
+  e.preventDefault(); inp.value=b.dataset.t; typed=false; picked=true; draw();
+  if(!always) box.hidden=true;
+  inp.dispatchEvent(new Event('change',{bubbles:true}));
+ });
+ return box;
+}
 async function editTeamColor(t){
  const ms=S.members.filter(m=>m.team===t), indiv=ms.filter(m=>toHex(m.color)).length;
  const r=await openColorPicker({title:`「${t}」のチーム色`,current:teamColor(t),resetLabel:S.teamColors[t]?'自動の色に戻す':null,
@@ -765,7 +798,8 @@ async function editTeamColor(t){
 }
 async function renameTeam(t){
  const el=document.createElement('div');
- el.innerHTML=`<div class="f"><label>チーム名</label><input type="text" id="rnTeam" value="${esc(t)}"></div><div class="hint">既にあるチーム名にすると、そのチームにまとめられます。</div>`;
+ el.innerHTML=`<div class="f"><label>チーム名</label><div><input type="text" id="rnTeam" value="${esc(t)}" autocomplete="off"></div></div><div class="hint">既にあるチーム名にすると、そのチームにまとめられます。</div>`;
+ attachTeamSuggest(el.querySelector('#rnTeam'));
  const r=await dialog({title:'チーム名を変更',body:el,buttons:[{t:'キャンセル',v:false},{t:'変更',v:true,cls:'pri'}]});
  if(!r) return;
  const v=normTeam(el.querySelector('#rnTeam').value); if(!v||v===t) return;
@@ -1649,20 +1683,13 @@ $('#bulkTeamBtn').onclick=async()=>{
  if(!bulkSel.size){toast('メンバーを選択してください');return;}
  const el=document.createElement('div');
  el.innerHTML=`<div class="hint">選択中 ${bulkSel.size}名 のチームをまとめて設定します（空欄でチーム解除）。</div>`+
-  `<div class="f"><label>チーム名</label><input type="text" id="bkTeam" list="teamList"></div><datalist id="teamList">${teamOrder().map(t=>`<option value="${esc(t)}">`).join('')}</datalist>`;
+  `<div class="f"><label>チーム名</label><div><input type="text" id="bkTeam" placeholder="入力または下から選択" autocomplete="off"></div></div>`;
+ attachTeamSuggest(el.querySelector('#bkTeam'),{always:true,none:true});
  const r=await dialog({title:'チーム一括設定',body:el,buttons:[{t:'キャンセル',v:false},{t:'設定',v:true,cls:'pri'}]});
  if(!r) return;
  const v=normTeam(el.querySelector('#bkTeam').value), ids=[...bulkSel];
  mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.team=v; } });
  toast(`${ids.length}名のチームを設定しました`);
-};
-$('#bulkColorBtn').onclick=async()=>{
- if(!bulkSel.size){toast('メンバーを選択してください');return;}
- const ids=[...bulkSel];
- const r=await openColorPicker({title:`${ids.length}名のカラーを変更`,current:memberColor(memberById(ids[0])),resetLabel:'チーム色に戻す'});
- if(!r) return;
- mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.color=r.color; } });
- toast(r.color?`${ids.length}名のカラーを変更しました`:`${ids.length}名をチーム色に戻しました`);
 };
 $('#addBtn').onclick=()=>addMember();
 function addMember(){
