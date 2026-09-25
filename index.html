@@ -52,6 +52,26 @@ svg.map text{pointer-events:none;font-family:inherit}
 .zbtns button:first-child{border-radius:8px 0 0 8px;margin-left:0}
 .zbtns button:last-child{border-radius:0 8px 8px 0}
 .zbtns .zpct{width:auto;min-width:52px;font-size:12px;font-weight:600}
+.zbtns svg{width:18px;height:18px;vertical-align:middle}
+.zbtns .ic-close,.fsview .zbtns .ic-open{display:none}
+.fsview .zbtns .ic-close{display:inline}
+/* 全画面表示 */
+body.fsopen{overflow:hidden}
+.fsview{position:fixed;inset:0;z-index:90;background:#fff;display:flex;flex-direction:column}
+.fsbar{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.fsbar b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fsmap{flex:1;min-height:0;overflow:hidden;padding:4px}
+.fsmap .zwrap{width:100%}
+.fsview .mapwrap{height:var(--fsH,70vh);overflow:auto}
+.fsview .mapwrap:not(.zoomed){display:flex;align-items:center;justify-content:center}
+.fsview svg.map{max-height:var(--fsH,70vh)}
+.fsview #infoBar{margin:0 8px 6px}
+.fsun{border-top:1px solid var(--line);padding:6px 8px calc(8px + env(safe-area-inset-bottom))}
+.fsun-h{font-size:12px;color:var(--sub);font-weight:700;margin-bottom:4px}
+.fsstrip{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;min-height:52px}
+.fschip{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;padding:4px;border:2px solid transparent;border-radius:8px;cursor:pointer;user-select:none;-webkit-user-select:none}
+.fschip.sel{border-color:#ff6d00;background:#fff4e8}
+.fschip small{font-size:11px;max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 svg.map .cell polygon{stroke-linejoin:round}
 svg.map .cell.empty polygon{fill:#eef0f4;stroke:#c8cdd6;stroke-width:1.5}
 svg.map .cell.filled polygon{stroke:#fff;stroke-width:1.5}
@@ -93,7 +113,8 @@ body:has(.ov) #toast{bottom:auto;top:calc(var(--hdrH,46px) + 8px)}
 .ghost{position:fixed;z-index:150;pointer-events:none;transform:translate(-50%,-140%);opacity:.9}
 .ghost .chip{height:34px;min-width:44px;font-size:16px;box-shadow:0 4px 12px rgba(0,0,0,.3)}
 .bubble{position:fixed;z-index:120;background:#222;color:#fff;padding:6px 10px;border-radius:8px;transform:translate(-50%,-120%);pointer-events:none;font-size:13px;max-width:70vw}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.pair>div,#outMain,.zwrap{min-width:0}
 #outSideSeg{display:none;margin-bottom:8px}
 .note{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:6px 10px;margin:8px 0;font-weight:600}
 .legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-top:12px}
@@ -164,7 +185,7 @@ button.tg.on{background:var(--pri2);border-color:var(--pri);color:var(--pri)}
 /* 出力・共有 */
 .viewbanner{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#fff3e0;border:1px solid #ffcc80;border-radius:10px;padding:10px 12px;margin-bottom:12px}
 .viewbanner .grow{flex:1;min-width:180px}
-.outgrid{display:grid;grid-template-columns:1fr 320px;gap:12px;align-items:start}
+.outgrid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:12px;align-items:start}
 #sharePanel{position:sticky;top:calc(var(--hdrH,52px) + 12px)}
 .sec-h{margin:0 0 6px;font-size:16px}
 .outhead{display:flex;align-items:flex-start;gap:8px;margin-bottom:6px}
@@ -221,10 +242,10 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
  #infoBar{margin-top:4px;padding:6px 8px;min-height:0}
  .ib-long{display:none}
  #rows{max-height:none}
- .pair{grid-template-columns:1fr}
+ .pair{grid-template-columns:minmax(0,1fr)}
  main{padding:8px}
  .listToggleBtn{display:inline-flex}
- .outgrid{grid-template-columns:1fr}
+ .outgrid{grid-template-columns:minmax(0,1fr)}
  #listPane{scroll-margin-top:calc(var(--hdrH,46px) + 40vh + 56px)}
  .nextbar .grow{flex-basis:100%}
  .nextbar button{flex:1}
@@ -315,7 +336,7 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
     <button id="mapCfgBtn">マップの形を変更…</button>
    </div>
    <div id="mapSticky">
-    <div class="zwrap"><div class="mapwrap" id="mapHost"></div><div class="zbtns" data-zk="edit"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button></div></div>
+    <div class="zwrap"><div class="mapwrap" id="mapHost"></div><div class="zbtns" data-zk="edit"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button><button type="button" data-z="fs" title="全画面表示" aria-label="全画面表示"><svg class="ic-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button></div></div>
     <div id="infoBar"></div>
    </div>
    <textarea id="memo" rows="2" placeholder="メモ（任意）" style="margin-top:8px"></textarea>
@@ -386,8 +407,8 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
   </div>
   <div class="seg" id="outSideSeg"><button data-oside="L">左陣地</button><button data-oside="R">右陣地</button></div>
   <div class="pair">
-   <div><div class="side-h">左陣地の場合</div><div class="zwrap"><div class="mapwrap" id="mapL"></div><div class="zbtns" data-zk="out"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button></div></div></div>
-   <div><div class="side-h">右陣地の場合</div><div class="zwrap"><div class="mapwrap" id="mapR"></div><div class="zbtns" data-zk="out"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button></div></div></div>
+   <div><div class="side-h">左陣地の場合</div><div class="zwrap"><div class="mapwrap" id="mapL"></div><div class="zbtns" data-zk="out"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button><button type="button" data-z="fs" title="全画面表示" aria-label="全画面表示"><svg class="ic-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button></div></div></div>
+   <div><div class="side-h">右陣地の場合</div><div class="zwrap"><div class="mapwrap" id="mapR"></div><div class="zbtns" data-zk="out"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button><button type="button" data-z="fs" title="全画面表示" aria-label="全画面表示"><svg class="ic-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg><svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg></button></div></div></div>
   </div>
   <div class="legend" id="legend"></div>
   <div id="unplacedBox"></div>
@@ -853,7 +874,8 @@ function sizeMap(wrap,z){
  wrap.classList.remove('zoomed');
  if(z<=1) return;
  const r=svg.getBoundingClientRect(); if(!r.width) return; // 非表示中は等倍のまま
- wrap.style.height=r.height+'px'; wrap.classList.add('zoomed');
+ if(!wrap.closest('.fsview')) wrap.style.height=r.height+'px'; // 全画面では枠の高さ＝表示領域いっぱい（CSS）
+ wrap.classList.add('zoomed');
  svg.style.maxWidth=svg.style.maxHeight='none';
  svg.style.width=r.width*z+'px'; svg.style.height=r.height*z+'px';
 }
@@ -900,6 +922,48 @@ function bindZoom(wrap,k){
  wrap.addEventListener('touchend',e=>{ if(e.touches.length<2) p0=null; });
 }
 
+/* ============ 全画面表示 ============ */
+// マップ（ズームボタン込み）を全画面の枠へ移動して表示する。作成画面では案内欄と未配置メンバーも表示
+let fs=null;
+function openFs(k,zw){
+ if(fs) return;
+ const v=document.createElement('div'); v.className='fsview';
+ const label=k==='edit'?(editSide==='L'?'左陣地から見る':'右陣地から見る'):(zw.querySelector('#mapR')?'右陣地の場合':'左陣地の場合');
+ v.innerHTML=`<div class="fsbar"><b>${esc((S.title?S.title+'　':'')+label)}</b><button type="button" class="fsclose">✕ 閉じる</button></div><div class="fsmap"></div>`+
+  (k==='edit'?'<div class="fsun"><div class="fsun-h"></div><div class="fsstrip"></div></div>':'');
+ document.body.appendChild(v);
+ const moved=[zw].concat(k==='edit'?[$('#infoBar')]:[]);
+ const phs=moved.map(n=>{ const ph=document.createComment('fs'); n.before(ph); return [ph,n]; });
+ const area=v.querySelector('.fsmap'); area.appendChild(zw);
+ if(k==='edit') area.after($('#infoBar'));
+ fs={v,k,wrap:zw.querySelector('.mapwrap'),phs};
+ document.body.classList.add('fsopen');
+ v.querySelector('.fsclose').onclick=closeFs;
+ fsLayout(); renderFsUn();
+ // 対応ブラウザ（Android など）ではブラウザのバーも隠す。ダイアログも表示できるようページ全体を対象にする
+ try{ const r=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); if(r&&r.catch) r.catch(()=>{}); }catch(e){}
+}
+function closeFs(){
+ if(!fs) return; const f=fs; fs=null;
+ f.phs.forEach(([ph,n])=>ph.replaceWith(n));
+ f.v.remove(); document.body.classList.remove('fsopen');
+ const sl=f.wrap.scrollLeft, st=f.wrap.scrollTop; sizeMap(f.wrap,zoom[f.k]); f.wrap.scrollLeft=sl; f.wrap.scrollTop=st;
+ try{ if(document.fullscreenElement&&document.exitFullscreen){ const r=document.exitFullscreen(); if(r&&r.catch) r.catch(()=>{}); } }catch(e){}
+}
+function fsLayout(){
+ if(!fs) return;
+ fs.v.style.setProperty('--fsH',Math.max(120,fs.v.querySelector('.fsmap').clientHeight-8)+'px');
+ const w=fs.wrap, sl=w.scrollLeft, st=w.scrollTop; sizeMap(w,zoom[fs.k]); w.scrollLeft=sl; w.scrollTop=st;
+}
+function renderFsUn(){
+ if(!fs||fs.k!=='edit') return;
+ const un=S.members.filter(m=>!placementOf(m.id));
+ fs.v.querySelector('.fsun-h').textContent=un.length?`未配置 ${un.length}名（タップして選択 → マスをタップで配置）`:'全員配置済みです ✓';
+ const st=fs.v.querySelector('.fsstrip'), sl=st.scrollLeft;
+ st.innerHTML=un.map(m=>{ const c=memberColor(m); return `<div class="fschip${sel===m.id?' sel':''}" data-mid="${m.id}"><span class="chip" style="background:${c};color:${textColor(c)}">${esc(shortOf(m))}</span><small>${esc(m.name)}</small></div>`; }).join('');
+ st.scrollLeft=sl;
+}
+
 /* ============ 編集画面 ============ */
 function renderAll(){
  $('#viewBadge').hidden=!viewing;
@@ -930,7 +994,7 @@ function renderEdit(){
  $('#showUnBtn').hidden=un===0;
  $('#toOutBtn').classList.toggle('pri',un===0);
  setMapHTML($('#mapHost'),mapSVG(editSide==='R'),'edit');
- renderInfo(); renderList();
+ renderInfo(); renderList(); renderFsUn();
 }
 function renderInfo(info){
  const b=$('#infoBar'); const m=sel&&memberById(sel);
@@ -1388,14 +1452,14 @@ document.addEventListener('pointerdown',e=>{
  if(viewing||mode!=='edit'||(e.pointerType==='mouse'&&e.button!==0)) return;
  if(e.target.closest('input,button,select,textarea,.ov')) return;
  if(drag) endDrag();
- const cell=e.target.closest('#mapHost [data-key]'), row=e.target.closest('.mrow');
+ const cell=e.target.closest('#mapHost [data-key]'), row=e.target.closest('.mrow,.fschip');
  let d=null;
  if(cell){ const key=cell.dataset.key; d={kind:'cell',key,mid:S.placements[key]||null}; }
- else if(row) d={kind:'row',mid:row.dataset.mid,grip:!!e.target.closest('.grip')};
+ else if(row) d={kind:'row',mid:row.dataset.mid,grip:!!e.target.closest('.grip'),chip:row.classList.contains('fschip')};
  else if(e.target.closest('#mapHost')) d={kind:'blank'};
  else return;
  d.id=e.pointerId; d.sx=d.x=e.clientX; d.sy=d.y=e.clientY; d.touch=e.pointerType!=='mouse'; d.active=false;
- if((d.kind==='row'&&d.touch&&!d.grip&&!bulkMode)||(d.kind==='cell'&&d.mid&&d.touch)) d.timer=setTimeout(()=>{ if(drag===d&&!d.active) startGhost(); },380);
+ if((d.kind==='row'&&d.touch&&!d.grip&&(!bulkMode||d.chip))||(d.kind==='cell'&&d.mid&&d.touch)) d.timer=setTimeout(()=>{ if(drag===d&&!d.active) startGhost(); },380);
  drag=d;
 });
 document.addEventListener('pointermove',e=>{
@@ -1405,7 +1469,7 @@ document.addEventListener('pointermove',e=>{
  if(!drag.active){
   if(drag.kind==='blank'||(drag.kind==='cell'&&!drag.mid)){ if(dist>8) drag.tapCancel=true; return; }
   if((drag.kind==='row'&&!drag.grip||drag.kind==='cell')&&drag.touch){ if(dist>8){clearTimeout(drag.timer);drag.tapCancel=true;} return; }
-  if(drag.kind==='row'&&bulkMode){ if(dist>8) drag.tapCancel=true; return; }
+  if(drag.kind==='row'&&bulkMode&&!drag.chip){ if(dist>8) drag.tapCancel=true; return; }
   if(dist>5) startGhost();
   return;
  }
@@ -1429,7 +1493,7 @@ document.addEventListener('pointerup',e=>{
   const c=cellAt(d.x,d.y); const el=document.elementFromPoint(d.x,d.y);
   endDrag();
   if(c) place(d.mid,c.dataset.key);
-  else if(d.kind==='cell'&&el&&el.closest('#listPane')) unplace(d.mid);
+  else if(d.kind==='cell'&&el&&el.closest('#listPane,.fsun')) unplace(d.mid);
   return;
  }
  endDrag();
@@ -1439,7 +1503,7 @@ document.addEventListener('pointerup',e=>{
 function tap(d){
  if(d.kind==='blank') return; // ミスタップで選択が外れないよう、余白のタップでは解除しない
  if(d.kind==='row'){
-  if(bulkMode){ if(bulkSel.has(d.mid)) bulkSel.delete(d.mid); else bulkSel.add(d.mid); renderList(); return; }
+  if(bulkMode&&!d.chip){ if(bulkSel.has(d.mid)) bulkSel.delete(d.mid); else bulkSel.add(d.mid); renderList(); return; }
   if(sel!==d.mid){ sel=d.mid; renderAll(); } return;
  }
  // cell
@@ -1478,6 +1542,7 @@ function openCellPicker(key){
 }
 document.addEventListener('keydown',e=>{
  const inField=/^(INPUT|TEXTAREA|SELECT)$/.test((e.target.tagName||''));
+ if(e.key==='Escape'&&fs&&!document.querySelector('.ov')){closeFs();return;}
  if(e.key==='Escape'&&sel&&!document.querySelector('.ov')){sel=null;renderAll();}
  if(inField||document.querySelector('.ov')) return;
  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();e.shiftKey?redo():undo();}
@@ -1504,10 +1569,12 @@ document.querySelectorAll('#outSideSeg button').forEach(b=>b.onclick=()=>{ui.out
 $('#saveImgBtn').onclick=saveOutImage;
 document.querySelectorAll('.zbtns').forEach(g=>g.addEventListener('click',e=>{
  const b=e.target.closest('[data-z]'); if(!b) return; const k=g.dataset.zk, w=g.previousElementSibling;
+ if(b.dataset.z==='fs'){ if(fs) closeFs(); else openFs(k,g.parentElement); return; }
  setZoom(k,b.dataset.z==='reset'?1:b.dataset.z==='in'?zoom[k]*ZSTEP:zoom[k]/ZSTEP,w);
 }));
 bindZoom($('#mapHost'),'edit'); bindZoom($('#mapL'),'out'); bindZoom($('#mapR'),'out');
-window.addEventListener('resize',()=>{ ['edit','out'].forEach(k=>zoomWraps(k).forEach(w=>{ const sl=w.scrollLeft, st=w.scrollTop; sizeMap(w,zoom[k]); w.scrollLeft=sl; w.scrollTop=st; })); });
+window.addEventListener('resize',()=>{ ['edit','out'].forEach(k=>zoomWraps(k).forEach(w=>{ const sl=w.scrollLeft, st=w.scrollTop; sizeMap(w,zoom[k]); w.scrollLeft=sl; w.scrollTop=st; })); fsLayout(); });
+document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement&&fs) closeFs(); else fsLayout(); });
 document.querySelectorAll('#labSeg button,#labSeg2 button').forEach(b=>b.onclick=()=>{ui.label=b.dataset.lab;saveUI();renderAll();});
 $('#colChk').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
 $('#colChk2').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
