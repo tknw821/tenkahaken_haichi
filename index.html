@@ -42,9 +42,16 @@ main{padding:12px;max-width:1500px;margin:0 auto}
 label.chk{display:inline-flex;align-items:center;gap:4px}
 #mapSticky{background:var(--card)}
 .mapwrap{text-align:center}
-svg.map{width:100%;height:auto;max-height:76vh;display:block;margin:0 auto;touch-action:pan-y pinch-zoom;user-select:none;-webkit-user-select:none;background:#fff;border-radius:8px}
+svg.map{width:100%;height:auto;max-height:76vh;display:block;margin:0 auto;touch-action:pan-x pan-y;user-select:none;-webkit-user-select:none;background:#fff;border-radius:8px}
 svg.map text{pointer-events:none;font-family:inherit}
-#outView svg.map{touch-action:pan-y pinch-zoom}
+/* ズーム：ピンチ・ホイール・ボタン。拡大中はマップ枠内をスクロールして移動 */
+.zwrap{position:relative}
+.mapwrap.zoomed{overflow:auto;text-align:left}
+.zbtns{position:absolute;top:6px;right:6px;display:flex;z-index:2;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.18)}
+.zbtns button{width:38px;height:36px;padding:0;border-radius:0;margin-left:-1px;background:rgba(255,255,255,.94);font-size:18px;font-weight:700;line-height:1}
+.zbtns button:first-child{border-radius:8px 0 0 8px;margin-left:0}
+.zbtns button:last-child{border-radius:0 8px 8px 0}
+.zbtns .zpct{width:auto;min-width:52px;font-size:12px;font-weight:600}
 svg.map .cell polygon{stroke-linejoin:round}
 svg.map .cell.empty polygon{fill:#eef0f4;stroke:#c8cdd6;stroke-width:1.5}
 svg.map .cell.filled polygon{stroke:#fff;stroke-width:1.5}
@@ -308,7 +315,7 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
     <button id="mapCfgBtn">マップの形を変更…</button>
    </div>
    <div id="mapSticky">
-    <div class="mapwrap" id="mapHost"></div>
+    <div class="zwrap"><div class="mapwrap" id="mapHost"></div><div class="zbtns" data-zk="edit"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button></div></div>
     <div id="infoBar"></div>
    </div>
    <textarea id="memo" rows="2" placeholder="メモ（任意）" style="margin-top:8px"></textarea>
@@ -379,8 +386,8 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
   </div>
   <div class="seg" id="outSideSeg"><button data-oside="L">左陣地</button><button data-oside="R">右陣地</button></div>
   <div class="pair">
-   <div><div class="side-h">左陣地の場合</div><div class="mapwrap" id="mapL"></div></div>
-   <div><div class="side-h">右陣地の場合</div><div class="mapwrap" id="mapR"></div></div>
+   <div><div class="side-h">左陣地の場合</div><div class="zwrap"><div class="mapwrap" id="mapL"></div><div class="zbtns" data-zk="out"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button></div></div></div>
+   <div><div class="side-h">右陣地の場合</div><div class="zwrap"><div class="mapwrap" id="mapR"></div><div class="zbtns" data-zk="out"><button type="button" data-z="out" title="縮小" aria-label="縮小">－</button><button type="button" data-z="reset" class="zpct" title="100%に戻す">100%</button><button type="button" data-z="in" title="拡大" aria-label="拡大">＋</button></div></div></div>
   </div>
   <div class="legend" id="legend"></div>
   <div id="unplacedBox"></div>
@@ -835,6 +842,64 @@ function mapSVG(mirror,o={}){
  return out+'</svg>';
 }
 
+/* ============ マップのズーム ============ */
+const ZMIN=1, ZMAX=4, ZSTEP=1.25;
+const zoom={edit:1,out:1}; // 作成画面／共有画面（左右共通）の倍率
+const zoomWraps=k=>k==='edit'?[$('#mapHost')]:[$('#mapL'),$('#mapR')];
+// 倍率 z でマップを描く。枠の高さは等倍時の高さに固定し、枠内をスクロールして移動する
+function sizeMap(wrap,z){
+ const svg=wrap.querySelector('svg.map'); if(!svg) return;
+ svg.style.width=svg.style.height=svg.style.maxWidth=svg.style.maxHeight=''; wrap.style.height='';
+ wrap.classList.remove('zoomed');
+ if(z<=1) return;
+ const r=svg.getBoundingClientRect(); if(!r.width) return; // 非表示中は等倍のまま
+ wrap.style.height=r.height+'px'; wrap.classList.add('zoomed');
+ svg.style.maxWidth=svg.style.maxHeight='none';
+ svg.style.width=r.width*z+'px'; svg.style.height=r.height*z+'px';
+}
+// (ax,ay)＝枠内の基準点。そこが動かないように拡大縮小する（省略時は中央）
+function applyZoom(wrap,z,oldZ,ax,ay){
+ const sl=wrap.scrollLeft, st=wrap.scrollTop;
+ if(ax==null){ ax=wrap.clientWidth/2; ay=wrap.clientHeight/2; }
+ sizeMap(wrap,z);
+ const k=z/oldZ; wrap.scrollLeft=(sl+ax)*k-ax; wrap.scrollTop=(st+ay)*k-ay;
+}
+function setMapHTML(wrap,html,k){
+ const sl=wrap.scrollLeft, st=wrap.scrollTop;
+ wrap.innerHTML=html; sizeMap(wrap,zoom[k]);
+ wrap.scrollLeft=sl; wrap.scrollTop=st;
+ updZoomUI(k);
+}
+function setZoom(k,z,src,ax,ay){
+ z=clamp(Math.round(z*100)/100,ZMIN,ZMAX); const old=zoom[k]; if(z===old) return;
+ zoom[k]=z;
+ zoomWraps(k).forEach(w=>applyZoom(w,z,old,w===src?ax:null,w===src?ay:null));
+ updZoomUI(k);
+}
+function updZoomUI(k){
+ document.querySelectorAll(`.zbtns[data-zk="${k}"]`).forEach(g=>{
+  g.querySelector('.zpct').textContent=Math.round(zoom[k]*100)+'%';
+  g.querySelector('[data-z=out]').disabled=zoom[k]<=ZMIN; g.querySelector('[data-z=in]').disabled=zoom[k]>=ZMAX;
+ });
+}
+function bindZoom(wrap,k){
+ // マウスホイール（トラックパッドのピンチも含む）
+ wrap.addEventListener('wheel',e=>{
+  e.preventDefault(); const r=wrap.getBoundingClientRect();
+  setZoom(k,zoom[k]*Math.exp(-e.deltaY*(e.deltaMode===1?0.05:0.0018)),wrap,e.clientX-r.left,e.clientY-r.top);
+ },{passive:false});
+ // 2本指ピンチ
+ let p0=null;
+ const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+ wrap.addEventListener('touchstart',e=>{ if(e.touches.length===2) p0={d:dist(e.touches)||1,z:zoom[k]}; },{passive:true});
+ wrap.addEventListener('touchmove',e=>{
+  if(!p0||e.touches.length!==2) return;
+  e.preventDefault(); const r=wrap.getBoundingClientRect();
+  setZoom(k,p0.z*dist(e.touches)/p0.d,wrap,(e.touches[0].clientX+e.touches[1].clientX)/2-r.left,(e.touches[0].clientY+e.touches[1].clientY)/2-r.top);
+ },{passive:false});
+ wrap.addEventListener('touchend',e=>{ if(e.touches.length<2) p0=null; });
+}
+
 /* ============ 編集画面 ============ */
 function renderAll(){
  $('#viewBadge').hidden=!viewing;
@@ -864,7 +929,7 @@ function renderEdit(){
  $('#nextStat').innerHTML=un>0?`あと <b>${un}名</b>が未配置です<br><small>未配置のままでも共有できます</small>`:`全員（${n}名）の配置が完了しました ✓`;
  $('#showUnBtn').hidden=un===0;
  $('#toOutBtn').classList.toggle('pri',un===0);
- $('#mapHost').innerHTML=mapSVG(editSide==='R');
+ setMapHTML($('#mapHost'),mapSVG(editSide==='R'),'edit');
  renderInfo(); renderList();
 }
 function renderInfo(info){
@@ -941,7 +1006,7 @@ function renderOut(){
  renderCfg();
  document.querySelectorAll('#outSideSeg button').forEach(b=>b.classList.toggle('on',b.dataset.oside===ui.outSide));
  $('#outView').dataset.side=ui.outSide;
- $('#mapL').innerHTML=mapSVG(false,{static:true}); $('#mapR').innerHTML=mapSVG(true,{static:true});
+ setMapHTML($('#mapL'),mapSVG(false,{static:true}),'out'); setMapHTML($('#mapR'),mapSVG(true,{static:true}),'out');
  const to=teamOrder(); const groups=[];
  to.concat(['']).forEach(t=>{
   const ms=S.members.filter(m=>(m.team||'')===t&&placementOf(m.id));
@@ -1317,7 +1382,9 @@ function cellAt(x,y){ const e=document.elementFromPoint(x,y); return e&&e.closes
 function clearDrop(){document.querySelectorAll('#mapHost .drop').forEach(e=>e.classList.remove('drop'));}
 function endDrag(){ if(!drag) return; clearTimeout(drag.timer); if(drag.ghost) drag.ghost.remove(); clearDrop(); drag=null; }
 
+let touchPts=0, multiTouch=false; // ピンチ中の指をタップ・ドラッグとして扱わない
 document.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='touch'){ touchPts++; if(touchPts>1){ multiTouch=true; endDrag(); return; } }
  if(viewing||mode!=='edit'||(e.pointerType==='mouse'&&e.button!==0)) return;
  if(e.target.closest('input,button,select,textarea,.ov')) return;
  if(drag) endDrag();
@@ -1346,8 +1413,15 @@ document.addEventListener('pointermove',e=>{
  clearDrop(); const c=cellAt(drag.x,drag.y); if(c) c.classList.add('drop');
 });
 document.addEventListener('touchmove',e=>{ if(drag&&drag.active&&e.cancelable) e.preventDefault(); },{passive:false});
-document.addEventListener('pointercancel',e=>{ if(drag&&e.pointerId===drag.id) endDrag(); });
+function touchUp(e){
+ if(e.pointerType!=='touch') return false;
+ touchPts=Math.max(0,touchPts-1);
+ if(multiTouch){ endDrag(); if(!touchPts) multiTouch=false; return true; }
+ return false;
+}
+document.addEventListener('pointercancel',e=>{ touchUp(e); if(drag&&e.pointerId===drag.id) endDrag(); });
 document.addEventListener('pointerup',e=>{
+ if(touchUp(e)) return;
  if(!drag||e.pointerId!==drag.id) return;
  const d=drag; const wasActive=d.active; d.x=e.clientX; d.y=e.clientY;
  if(wasActive){
@@ -1428,6 +1502,12 @@ document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{ if(mode!==b
 document.querySelectorAll('#sideSeg button').forEach(b=>b.onclick=()=>{editSide=b.dataset.side;renderAll();});
 document.querySelectorAll('#outSideSeg button').forEach(b=>b.onclick=()=>{ui.outSide=b.dataset.oside;saveUI();renderAll();});
 $('#saveImgBtn').onclick=saveOutImage;
+document.querySelectorAll('.zbtns').forEach(g=>g.addEventListener('click',e=>{
+ const b=e.target.closest('[data-z]'); if(!b) return; const k=g.dataset.zk, w=g.previousElementSibling;
+ setZoom(k,b.dataset.z==='reset'?1:b.dataset.z==='in'?zoom[k]*ZSTEP:zoom[k]/ZSTEP,w);
+}));
+bindZoom($('#mapHost'),'edit'); bindZoom($('#mapL'),'out'); bindZoom($('#mapR'),'out');
+window.addEventListener('resize',()=>{ ['edit','out'].forEach(k=>zoomWraps(k).forEach(w=>{ const sl=w.scrollLeft, st=w.scrollTop; sizeMap(w,zoom[k]); w.scrollLeft=sl; w.scrollTop=st; })); });
 document.querySelectorAll('#labSeg button,#labSeg2 button').forEach(b=>b.onclick=()=>{ui.label=b.dataset.lab;saveUI();renderAll();});
 $('#colChk').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
 $('#colChk2').onchange=e=>{ui.cols=e.target.checked;saveUI();renderAll();};
