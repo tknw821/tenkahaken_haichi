@@ -371,7 +371,6 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
    <div class="bulkbar" id="bulkBar" hidden>
     <span id="bulkCount">選択中 0名</span>
     <button id="bulkTeamBtn">チームを変更</button>
-    <button id="bulkColorBtn">カラーを変更</button>
     <button id="bulkAllBtn">全選択</button>
     <button id="bulkClearBtn">選択解除</button>
    </div>
@@ -1655,14 +1654,6 @@ $('#bulkTeamBtn').onclick=async()=>{
  const v=normTeam(el.querySelector('#bkTeam').value), ids=[...bulkSel];
  mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.team=v; } });
  toast(`${ids.length}名のチームを設定しました`);
-};
-$('#bulkColorBtn').onclick=async()=>{
- if(!bulkSel.size){toast('メンバーを選択してください');return;}
- const ids=[...bulkSel];
- const r=await openColorPicker({title:`${ids.length}名のカラーを変更`,current:memberColor(memberById(ids[0])),resetLabel:'チーム色に戻す'});
- if(!r) return;
- mutate(()=>{ for(const id of ids){ const m=memberById(id); if(m) m.color=r.color; } });
- toast(r.color?`${ids.length}名のカラーを変更しました`:`${ids.length}名をチーム色に戻しました`);
 };
 $('#addBtn').onclick=()=>addMember();
 function addMember(){
