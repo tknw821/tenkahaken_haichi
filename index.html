@@ -479,7 +479,7 @@ function saveUI(){ try{localStorage.setItem(UI_KEY,JSON.stringify(ui));}catch(e)
 // 閲覧者が編集モード（書き出し・取り込み）に入れないようにする簡易ロック。
 // ページのソースは公開されているため厳密な保護ではない。パスワード自体は置かず、ハッシュのみ置く。
 // EDIT_HASH が空のときはロックしない。パスワードを変えると、解除済みの端末も再ロックされる。
-const EDIT_SALT='', EDIT_HASH='';
+const EDIT_SALT='aea108726f0f1fdca3c4c91d', EDIT_HASH='2aa6ba9d74432ffabde14399d21fb9759120a9eadfd3195796143b6534be9141';
 const UNLOCK_KEY='sanpo-haichi-unlock-v1';
 let unlockedMem=false; // localStorage が使えない環境用（そのページを開いている間だけ解除）
 async function hashPw(pw){
