@@ -240,6 +240,17 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
 .dlg .f:has(.tsug){align-items:start}
 .dlg .f:has(.tsug)>label{padding-top:7px}
 .dbtn .sp{flex:1}
+/* ロック */
+body.locked header#top>*:not(h1),body.locked #editView,body.locked #outView{display:none!important}
+body.locked header#top h1{display:block!important}
+#lockView{max-width:420px;margin:8vh auto 0}
+.lockcard{text-align:center;padding:24px 20px}
+.lockcard h2{margin:4px 0 6px;font-size:18px}
+.lockic{font-size:34px}
+.lockcard form{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.lockcard input{font-size:16px;padding:9px 10px;text-align:center}
+.pwerr{color:var(--dan);font-weight:700;font-size:13px;margin-top:6px}
+.lockcard .pwerr{margin-top:0}
 @media(max-width:900px){
  .layout{grid-template-columns:1fr}
  .layout{display:block}
@@ -312,6 +323,7 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
    <hr>
    <button type="button" data-act="clear" class="dan">全配置クリア</button>
    <button type="button" data-act="new" class="dan">新しい配置図…</button>
+   <button type="button" data-act="lock" id="lockMenuBtn">🔒 この端末をロック</button>
   </div>
  </div>
 </header>
@@ -391,7 +403,7 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
 
 <main id="outView" hidden>
  <div class="viewbanner" id="viewBanner" hidden>
-  <span class="grow">共有された配置図を表示しています。自分で編集したい場合は取り込んでください。</span>
+  <span class="grow">共有された配置図を表示しています。編集用パスワードをお持ちの方は、編集に取り込めます。</span>
   <button id="importBtn" class="pri">このデータを編集に取り込む</button>
  </div>
  <div class="outgrid">
@@ -462,6 +474,75 @@ function setSaveSt(ok){
  el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash');
 }
 function saveUI(){ try{localStorage.setItem(UI_KEY,JSON.stringify(ui));}catch(e){} }
+
+/* ============ 編集用パスワード ============ */
+// 閲覧者が編集モード（書き出し・取り込み）に入れないようにする簡易ロック。
+// ページのソースは公開されているため厳密な保護ではない。パスワード自体は置かず、ハッシュのみ置く。
+// EDIT_HASH が空のときはロックしない。パスワードを変えると、解除済みの端末も再ロックされる。
+const EDIT_SALT='', EDIT_HASH='';
+const UNLOCK_KEY='sanpo-haichi-unlock-v1';
+let unlockedMem=false; // localStorage が使えない環境用（そのページを開いている間だけ解除）
+async function hashPw(pw){
+ const enc=new TextEncoder();
+ const key=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveBits']);
+ const bits=await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:enc.encode(EDIT_SALT),iterations:100000},key,256);
+ return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function isUnlocked(){
+ if(!EDIT_HASH||unlockedMem) return true;
+ try{ return localStorage.getItem(UNLOCK_KEY)===EDIT_HASH; }catch(e){ return false; }
+}
+async function unlock(pw){
+ let h=''; try{ h=await hashPw(pw); }catch(e){ toast('このブラウザではパスワードを確認できません'); return false; }
+ if(h!==EDIT_HASH) return false;
+ unlockedMem=true; try{ localStorage.setItem(UNLOCK_KEY,EDIT_HASH); }catch(e){}
+ return true;
+}
+// パスワード入力ダイアログ。正解なら true、キャンセルなら false
+function askPassword(title){
+ return new Promise(res=>{
+  const sh=sheet(title||'編集用パスワード'); let ok=false;
+  sh.onclose=()=>res(ok);
+  const f=document.createElement('form');
+  f.innerHTML='<div class="hint" style="margin-bottom:8px">編集用のパスワードを入力してください。</div>'+
+   '<input type="password" class="pwin" autocomplete="current-password" aria-label="パスワード" style="width:100%">'+
+   '<div class="pwerr" hidden>パスワードが違います</div>'+
+   '<div class="dbtn"><button type="button" data-b="cancel">キャンセル</button><button type="submit" class="pri">開く</button></div>';
+  sh.dl.appendChild(f);
+  const inp=f.querySelector('.pwin'), err=f.querySelector('.pwerr'), btn=f.querySelector('[type=submit]');
+  f.querySelector('[data-b=cancel]').onclick=()=>sh.close();
+  f.onsubmit=async e=>{
+   e.preventDefault(); if(btn.disabled) return;
+   btn.disabled=true; err.hidden=true;
+   if(await unlock(inp.value)){ ok=true; sh.close(); return; }
+   setTimeout(()=>{ btn.disabled=false; err.hidden=false; inp.select(); },600); // 連打を少し抑える
+  };
+  inp.focus();
+ });
+}
+// ロック画面（共有URL以外で開いたとき、未解除なら表示）
+function showLockScreen(){
+ document.body.classList.add('locked');
+ const v=document.createElement('main'); v.id='lockView';
+ v.innerHTML='<div class="card lockcard"><div class="lockic">🔒</div><h2>編集用パスワード</h2>'+
+  '<p class="hint">配置図を見るだけなら、共有されたURLを開いてください。</p>'+
+  '<form><input type="password" class="pwin" autocomplete="current-password" aria-label="パスワード" placeholder="パスワード">'+
+  '<div class="pwerr" hidden>パスワードが違います</div><button type="submit" class="pri big">開く</button></form></div>';
+ document.body.appendChild(v);
+ const f=v.querySelector('form'), inp=v.querySelector('.pwin'), err=v.querySelector('.pwerr'), btn=f.querySelector('button');
+ f.onsubmit=async e=>{
+  e.preventDefault(); if(btn.disabled) return;
+  btn.disabled=true; err.hidden=true;
+  if(await unlock(inp.value)){ v.remove(); document.body.classList.remove('locked'); loadLS(); renderAll(); return; }
+  setTimeout(()=>{ btn.disabled=false; err.hidden=false; inp.select(); },600);
+ };
+ inp.focus();
+}
+async function lockDevice(){
+ if(!await confirmDlg('この端末をロック','この端末で編集するには、次回からパスワードの入力が必要になります。<br><small>編集中のデータはこの端末に残ります。</small>','ロックする')) return;
+ try{ localStorage.removeItem(UNLOCK_KEY); }catch(e){}
+ unlockedMem=false; location.reload();
+}
 function loadLS(){
  try{const t=localStorage.getItem(UI_KEY); if(t) Object.assign(ui,JSON.parse(t)); ui.q='';}catch(e){}
  // 旧バージョンでは「メンバー表をたたむ」が初期値だったため、一度だけ展開状態に戻す
@@ -1003,6 +1084,7 @@ function renderAll(){
  $('#viewBadge').hidden=!viewing;
  $('#tabs').hidden=viewing;
  $('#undoBtn').hidden=$('#redoBtn').hidden=$('#fileWrap').hidden=$('#saveSt').hidden=viewing;
+ $('#lockMenuBtn').hidden=!EDIT_HASH;
  document.body.classList.toggle('viewing',viewing);
  $('#viewBanner').hidden=!viewing;
  $('#undoBtn').disabled=!undoStack.length; $('#redoBtn').disabled=!redoStack.length;
@@ -1649,6 +1731,7 @@ function dataAction(act){
  else if(act==='text') exportText();
  else if(act==='clear') clearAll();
  else if(act==='new') newDiagram();
+ else if(act==='lock') lockDevice();
  else if(act==='add') addMember();
 }
 async function openPasteDialog(){
@@ -1717,6 +1800,7 @@ $('#rows').addEventListener('change',e=>{
 });
 $('#shareBtn').onclick=makeShare;
 $('#importBtn').onclick=async()=>{
+ if(!isUnlocked()&&!await askPassword('編集に取り込む')) return;
  let existing=null;
  try{ const t=localStorage.getItem(LS_KEY); if(t) existing=sanitize(JSON.parse(t)); }catch(e){}
  const n=existing?existing.members.length:0;
@@ -1747,7 +1831,8 @@ window.addEventListener('hashchange',()=>location.reload());
    document.body.innerHTML='<main style="max-width:560px"><div class="card"><h2>URLが壊れています</h2><p>共有URLを読み込めませんでした。URLが途中で切れていないか確認してください。</p><p><a href="'+esc(location.pathname)+'">編集画面を開く</a></p></div></main>';
    return;
   }
- } else loadLS();
+ } else if(!isUnlocked()){ showLockScreen(); return; }
+ else loadLS();
  renderAll();
 })();
 </script>
