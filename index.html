@@ -240,6 +240,8 @@ button.cpbtn.done{color:#2e7d32;border-color:#81c784;background:#e8f5e9}
 .dlg .f:has(.tsug){align-items:start}
 .dlg .f:has(.tsug)>label{padding-top:7px}
 .dbtn .sp{flex:1}
+.imgprev{text-align:center;background:#f3f4f6;border-radius:8px;padding:8px}
+.imgprev img{max-width:100%;max-height:45vh;display:block;margin:0 auto;border-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
 /* ロック */
 body.locked header#top>*:not(h1),body.locked #editView,body.locked #outView{display:none!important}
 body.locked header#top h1{display:block!important}
@@ -1212,11 +1214,21 @@ function currentOutSide(){
  // スマホ幅（左右切替あり）では今選んでいる側、PC幅では常に左陣地
  return window.matchMedia('(max-width:900px)').matches?ui.outSide:'L';
 }
+// 画像化するときはページのCSSが効かないため、マスや文字の見た目をSVG内に直接書き込む
+const SVG_EXPORT_STYLE='<style>'+
+ 'text{font-family:system-ui,-apple-system,"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif}'+
+ '.cell polygon{stroke-linejoin:round}'+
+ '.cell.empty polygon{fill:#eef0f4;stroke:#c8cdd6;stroke-width:1.5}'+
+ '.cell.filled polygon{stroke:#fff;stroke-width:1.5}'+
+ '.lab{fill:#444;font-weight:700;text-anchor:middle}'+
+ '.fr{fill:#c62828;text-anchor:middle;font-weight:700}'+
+ '.bs{fill:#6b7280;text-anchor:middle;font-weight:600}'+
+ '</style>';
 function svgWithSize(svgStr){
  const m=/viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(svgStr);
  if(!m) return svgStr;
  const vw=m[3], vh=m[4];
- return svgStr.replace('<svg ',`<svg width="${vw}" height="${vh}" `);
+ return svgStr.replace('<svg ',`<svg width="${vw}" height="${vh}" `).replace(/(<svg[^>]*>)/,'$1'+SVG_EXPORT_STYLE);
 }
 function saveOutImage(){
  const side=currentOutSide(), mirror=side==='R';
@@ -1410,14 +1422,28 @@ function downloadBlob(blob,filename){
  document.body.appendChild(a); a.click(); a.remove();
  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
 }
+// 画像の保存方法を選ぶシート（ダウンロード／アプリで共有）。プレビューは長押し保存にも使える
 function saveOrShareBlob(blob,filename){
  const file=new File([blob],filename,{type:blob.type||'image/png'});
- if(navigator.canShare&&navigator.canShare({files:[file]})){
-  // await を挟まず、クリック直後に同期的に呼ぶ。拒否／失敗時は <a download> にフォールバック
-  navigator.share({files:[file]}).catch(e=>{ if(e&&e.name==='AbortError') return; downloadBlob(blob,filename); });
-  return;
- }
- downloadBlob(blob,filename);
+ const canShare=!!(navigator.canShare&&navigator.share&&navigator.canShare({files:[file]}));
+ const url=URL.createObjectURL(blob);
+ const sh=sheet('画像を保存'); sh.onclose=()=>setTimeout(()=>URL.revokeObjectURL(url),3000);
+ const body=document.createElement('div');
+ body.innerHTML=`<div class="imgprev"><img src="${url}" alt="${esc(filename)}"></div>`+
+  '<div class="hint" style="text-align:center;margin-top:4px">うまく保存できない場合は、画像を長押しして保存できます。</div>'+
+  '<div class="dbtn"><button type="button" data-b="close">閉じる</button>'+
+  (canShare?'<button type="button" data-b="share">アプリで共有…</button>':'')+
+  '<button type="button" class="pri" data-b="dl">⬇ ダウンロード</button></div>';
+ sh.dl.appendChild(body);
+ body.addEventListener('click',e=>{
+  const b=e.target.closest('[data-b]'); if(!b) return;
+  if(b.dataset.b==='dl'){ downloadBlob(blob,filename); sh.close(); toast('ダウンロードしました'); }
+  else if(b.dataset.b==='share'){
+   // タップの直後に呼ぶ（ユーザー操作が必要なため）。拒否・失敗時はダウンロードに切り替え
+   navigator.share({files:[file]}).then(()=>sh.close()).catch(err=>{ if(err&&err.name==='AbortError') return; downloadBlob(blob,filename); sh.close(); });
+  }
+  else sh.close();
+ });
 }
 // canvas（生成済み・同期的に描画完了しているもの）を PNG として保存／共有する共通関数。
 // Safari は navigator.share をユーザー操作の直後に同期的に呼ばないと拒否することがあるため、
